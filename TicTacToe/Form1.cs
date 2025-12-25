@@ -95,7 +95,7 @@ namespace TicTacToe
         }
         private void computer_make_move()
         {
-            //Priority 1:  Get tick tac toe
+            //Priority 1:  Get tic tac toe
             //Priority 2:  Block x tic tac toe
             //Priority 3:  Go for corner space
             //Priority 4:  Go for outside middle
