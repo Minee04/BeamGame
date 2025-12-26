@@ -2,23 +2,15 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "C/C++ Runner: Debug Session",
-      "type": "cppdbg",
+      "name": "Run TicTacToe",
+      "type": "node",
       "request": "launch",
-      "args": [],
-      "stopAtEntry": false,
-      "externalConsole": true,
-      "cwd": "c:/Users/kenan/source/repos/TicTacToe",
-      "program": "c:/Users/kenan/source/repos/TicTacToe/build/Debug/outDebug",
-      "MIMode": "gdb",
-      "miDebuggerPath": "gdb",
-      "setupCommands": [
-        {
-          "description": "Enable pretty-printing for gdb",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        }
-      ]
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": [
+        "-Command",
+        "& '${env:ProgramFiles}\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe' '${workspaceFolder}\\TicTacToe.sln' /p:Configuration=Debug /t:Build /v:minimal /nologo; if ($LASTEXITCODE -eq 0) { Start-Process '${workspaceFolder}\\TicTacToe\\bin\\Debug\\TicTacToe.exe' }"
+      ],
+      "console": "integratedTerminal"
     }
   ]
 }

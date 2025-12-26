@@ -3,8 +3,15 @@
     "tasks": [
         {
             "label": "build",
-            "type": "shell",
-            "command": "& 'C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe' TicTacToe.sln /p:Configuration=Debug /t:Build /v:minimal",
+            "type": "process",
+            "command": "${env:ProgramFiles}\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+            "args": [
+                "${workspaceFolder}\\TicTacToe.sln",
+                "/p:Configuration=Debug",
+                "/t:Build",
+                "/v:minimal",
+                "/nologo"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -17,28 +24,14 @@
         },
         {
             "label": "run",
-            "type": "shell",
-            "command": "Start-Process '.\\TicTacToe\\bin\\Debug\\TicTacToe.exe'",
+            "type": "process",
+            "command": "${workspaceFolder}\\TicTacToe\\bin\\Debug\\TicTacToe.exe",
             "dependsOn": "build",
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
             },
             "problemMatcher": []
-        },
-        {
-            "label": "build and run",
-            "type": "shell",
-            "command": "& 'C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe' TicTacToe.sln /p:Configuration=Debug /t:Build /v:minimal; if ($LASTEXITCODE -eq 0) { Start-Process '.\\TicTacToe\\bin\\Debug\\TicTacToe.exe' }",
-            "group": {
-                "kind": "test",
-                "isDefault": true
-            },
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": "$msCompile"
         }
     ]
 }
