@@ -33,6 +33,7 @@ namespace TicTacToe
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.newGameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.resetScoreToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.trainAIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -73,6 +74,7 @@ namespace TicTacToe
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.newGameToolStripMenuItem,
             this.resetScoreToolStripMenuItem,
+            this.trainAIToolStripMenuItem,
             this.exitToolStripMenuItem});
             this.fileToolStripMenuItem.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
@@ -92,6 +94,13 @@ namespace TicTacToe
             this.resetScoreToolStripMenuItem.Size = new System.Drawing.Size(214, 36);
             this.resetScoreToolStripMenuItem.Text = "Reset Score";
             this.resetScoreToolStripMenuItem.Click += new System.EventHandler(this.resetScoreToolStripMenuItem_Click);
+            // 
+            // trainAIToolStripMenuItem
+            // 
+            this.trainAIToolStripMenuItem.Name = "trainAIToolStripMenuItem";
+            this.trainAIToolStripMenuItem.Size = new System.Drawing.Size(214, 36);
+            this.trainAIToolStripMenuItem.Text = "Train AI";
+            this.trainAIToolStripMenuItem.Click += new System.EventHandler(this.trainAIToolStripMenuItem_Click);
             // 
             // exitToolStripMenuItem
             // 
@@ -342,6 +351,8 @@ namespace TicTacToe
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem newGameToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem resetScoreToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem trainAIToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
@@ -358,7 +369,6 @@ namespace TicTacToe
         private System.Windows.Forms.Label XWinCount;
         private System.Windows.Forms.Label OWinCount;
         private System.Windows.Forms.Label DrawCount;
-        private System.Windows.Forms.ToolStripMenuItem resetScoreToolStripMenuItem;
         private System.Windows.Forms.TextBox tbxP1;
         private System.Windows.Forms.TextBox tbxP2;
     }

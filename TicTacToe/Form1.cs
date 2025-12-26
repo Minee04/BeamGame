@@ -17,9 +17,12 @@ namespace TicTacToe
     {
         private GameEngine _gameEngine;
         private ComputerPlayer _computerPlayer;
+        private QLearningAI _qLearningAI;
         private bool _isAgainstComputer;
+        private bool _useQLearning;
         private Dictionary<Button, CellPosition> _buttonToPosition;
-        private Dictionary<CellPosition, Button> _positionToButton; 
+        private Dictionary<CellPosition, Button> _positionToButton;
+        private const string QTablePath = "qtable.dat"; 
 
         public frmMain()
         {
@@ -34,6 +37,24 @@ namespace TicTacToe
         {
             _gameEngine = new GameEngine();
             _isAgainstComputer = false;
+            _useQLearning = false;
+
+            // Try to load existing Q-table
+            _qLearningAI = new QLearningAI(
+                learningRate: 0.3,
+                discountFactor: 0.95,
+                explorationRate: 0.0,  // NO exploration during gameplay - play optimally!
+                explorationDecay: 0.999
+            );
+
+            try
+            {
+                _qLearningAI.LoadQTable(QTablePath);
+            }
+            catch
+            {
+                // Q-table doesn't exist yet, will be created through training
+            }
 
             // Map buttons to board positions
             _buttonToPosition = new Dictionary<Button, CellPosition>
@@ -60,7 +81,7 @@ namespace TicTacToe
                 if (result == System.Windows.Forms.DialogResult.Yes)
                 {
                     tbxP2.Text = "Computer";
-                    SetupComputerGame();
+                    // SetupComputerGame() will be called by tbxP2_TextChanged
                 }
             }
         }
@@ -71,7 +92,33 @@ namespace TicTacToe
         private void SetupComputerGame()
         {
             _isAgainstComputer = true;
-            _computerPlayer = new ComputerPlayer(PlayerType.O, new StrategicAI());
+            
+            // Ask if user wants Q-Learning AI or Strategic AI
+            DialogResult qLearningChoice = MessageBox.Show(
+                "Use Q-Learning AI (learns from experience)?\n\nYes = Q-Learning AI\nNo = Strategic AI",
+                "AI Type",
+                MessageBoxButtons.YesNoCancel
+            );
+
+            if (qLearningChoice == DialogResult.Cancel)
+            {
+                _isAgainstComputer = false;
+                tbxP2.Text = "Player 2";
+                return;
+            }
+
+            _useQLearning = (qLearningChoice == DialogResult.Yes);
+
+            if (_useQLearning)
+            {
+                _computerPlayer = new ComputerPlayer(PlayerType.O, _qLearningAI);
+                _qLearningAI.StartNewGame();
+            }
+            else
+            {
+                _computerPlayer = new ComputerPlayer(PlayerType.O, new StrategicAI());
+            }
+
             tbxP1.Text = "You";
         }
 
@@ -195,6 +242,13 @@ namespace TicTacToe
         /// </summary>
         private void HandleGameEnd(GameResult result)
         {
+            // If using Q-Learning, let it learn from this game
+            if (_useQLearning && _isAgainstComputer)
+            {
+                _qLearningAI.LearnFromGame(result);
+                _qLearningAI.SaveQTable(QTablePath);
+            }
+
             DisableAllButtons();
 
             string message = "";
@@ -221,6 +275,13 @@ namespace TicTacToe
             }
 
             MessageBox.Show(message, result.State == Models.GameState.Draw ? "Result" : "Congrats!");
+            
+            // Start new game and reset Q-Learning history
+            if (_useQLearning)
+            {
+                _qLearningAI.StartNewGame();
+            }
+            
             StartNewGame();
         }
 
@@ -257,6 +318,83 @@ namespace TicTacToe
             DrawCount.Text = "0";
             XWinCount.Text = "0";
         }
+
+        private void trainAIToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show(
+                "Train Q-Learning AI?\n\nThis will play 10,000 games for training.\nIt may take 10-30 seconds.\n\nContinue?",
+                "Train AI",
+                MessageBoxButtons.YesNo
+            );
+
+            if (result == DialogResult.Yes)
+            {
+                TrainQLearningAI();
+            }
+        }
+
+        /// <summary>
+        /// Trains the Q-Learning AI by playing games against itself
+        /// </summary>
+        private void TrainQLearningAI()
+        {
+            const int totalGames = 10000;
+
+            // Create a training AI with higher exploration
+            var trainingAI = new QLearningAI(
+                learningRate: 0.3,
+                discountFactor: 0.95,
+                explorationRate: 1.0,  // Start with full exploration
+                explorationDecay: 0.998
+            );
+
+            // Load existing knowledge if available
+            try
+            {
+                trainingAI.LoadQTable(QTablePath);
+            }
+            catch { }
+
+            var trainer = new AITrainer(trainingAI, new QLearningAI());
+
+            // Create and show progress form
+            using (var progressForm = new TrainingProgressForm())
+            {
+                progressForm.Show();
+                double currentExplorationRate = trainingAI.ExplorationRate;
+                progressForm.UpdateProgress(0, totalGames, new TrainingStats(), trainingAI.QTableSize, currentExplorationRate);
+
+                // Train with progress updates every 100 games
+                var stats = trainer.TrainAI(totalGames, (games, currentStats) =>
+                {
+                    currentExplorationRate = trainingAI.ExplorationRate;
+                    progressForm.UpdateProgress(games, totalGames, currentStats, trainingAI.QTableSize, currentExplorationRate);
+                    
+                    if (progressForm.IsCancelled)
+                    {
+                        // Allow early stopping
+                        throw new OperationCanceledException();
+                    }
+                });
+
+                // Final update
+                progressForm.UpdateProgress(totalGames, totalGames, stats, trainingAI.QTableSize, trainingAI.ExplorationRate);
+
+                // Save the trained Q-table
+                trainingAI.SaveQTable(QTablePath);
+
+                // Reload the Q-table into the game AI
+                _qLearningAI.LoadQTable(QTablePath);
+
+                MessageBox.Show(
+                    $"Training Complete!\n\n{stats}\n\nQ-Table Size: {trainingAI.QTableSize:N0} states\nExploration Rate: {trainingAI.ExplorationRate * 100:F1}%",
+                    "Training Results",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+            }
+        }
+
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
 

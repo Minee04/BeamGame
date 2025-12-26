@@ -1,0 +1,18 @@
+[
+    {
+        "key": "f5",
+        "command": "workbench.action.tasks.runTask",
+        "args": "build and run",
+        "when": "workspaceFolderCount != 0"
+    },
+    {
+        "key": "ctrl+f5",
+        "command": "workbench.action.tasks.runTask",
+        "args": "build and run",
+        "when": "workspaceFolderCount != 0"
+    },
+    {
+        "key": "ctrl+shift+b",
+        "command": "workbench.action.tasks.build"
+    }
+]
