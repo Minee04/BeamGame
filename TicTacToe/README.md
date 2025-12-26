@@ -41,4 +41,3 @@ TicTacToe/
 ## How Q-Learning Works
 
 The AI learns by playing thousands of games against itself, updating a Q-table that maps game states to optimal moves. Training parameters (learning rate, exploration rate) are tunable in the code.
-

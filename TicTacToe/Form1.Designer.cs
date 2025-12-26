@@ -34,6 +34,7 @@ namespace TicTacToe
             this.newGameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.resetScoreToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.trainAIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.resetAIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -82,6 +83,7 @@ namespace TicTacToe
             this.newGameToolStripMenuItem,
             this.resetScoreToolStripMenuItem,
             this.trainAIToolStripMenuItem,
+            this.resetAIToolStripMenuItem,
             this.exitToolStripMenuItem});
             this.fileToolStripMenuItem.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
@@ -108,6 +110,13 @@ namespace TicTacToe
             this.trainAIToolStripMenuItem.Size = new System.Drawing.Size(214, 36);
             this.trainAIToolStripMenuItem.Text = "Train AI";
             this.trainAIToolStripMenuItem.Click += new System.EventHandler(this.trainAIToolStripMenuItem_Click);
+            // 
+            // resetAIToolStripMenuItem
+            // 
+            this.resetAIToolStripMenuItem.Name = "resetAIToolStripMenuItem";
+            this.resetAIToolStripMenuItem.Size = new System.Drawing.Size(214, 36);
+            this.resetAIToolStripMenuItem.Text = "Reset AI";
+            this.resetAIToolStripMenuItem.Click += new System.EventHandler(this.resetAIToolStripMenuItem_Click);
             // 
             // exitToolStripMenuItem
             // 
@@ -375,7 +384,7 @@ namespace TicTacToe
             this.lblAIStatus.Name = "lblAIStatus";
             this.lblAIStatus.Size = new System.Drawing.Size(105, 22);
             this.lblAIStatus.TabIndex = 21;
-            this.lblAIStatus.Text = "AI Status:";
+            this.lblAIStatus.Text = "Q-Learning Status:";
             // 
             // lblAIStatusValue
             // 
@@ -432,6 +441,7 @@ namespace TicTacToe
         private System.Windows.Forms.ToolStripMenuItem newGameToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem resetScoreToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem trainAIToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem resetAIToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;

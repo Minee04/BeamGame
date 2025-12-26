@@ -315,5 +315,14 @@ namespace TicTacToe.AI
                 }
             }
         }
+
+        /// <summary>
+        /// Resets all learned knowledge and returns AI to untrained state
+        /// </summary>
+        public void ResetKnowledge()
+        {
+            _qTable.Clear();
+            _explorationRate = 1.0; // Reset to full exploration
+        }
     }
 }

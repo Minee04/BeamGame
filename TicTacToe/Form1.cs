@@ -359,7 +359,7 @@ namespace TicTacToe
         private void trainAIToolStripMenuItem_Click(object sender, EventArgs e)
         {
             DialogResult result = MessageBox.Show(
-                "Train Q-Learning AI?\n\nThis will play 10,000 games for training.\nIt may take 10-30 seconds.\n\nContinue?",
+                "Train Q-Learning AI?\n\nThis will play 10,000 games for training.\nIt may take 5-10 seconds.\n\nContinue?",
                 "Train AI",
                 MessageBoxButtons.YesNo
             );
@@ -367,6 +367,35 @@ namespace TicTacToe
             if (result == DialogResult.Yes)
             {
                 TrainQLearningAI();
+            }
+        }
+
+        private void resetAIToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show(
+                "Reset Q-Learning AI?\n\nThis will delete all learned knowledge.\nThe AI will need to be retrained.\n\nContinue?",
+                "Reset AI",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning
+            );
+
+            if (result == DialogResult.Yes)
+            {
+                _qLearningAI.ResetKnowledge();
+                
+                // Delete qtable.dat file if it exists
+                if (System.IO.File.Exists(QTablePath))
+                {
+                    System.IO.File.Delete(QTablePath);
+                }
+                
+                UpdateAIStatus();
+                MessageBox.Show(
+                    "AI knowledge has been reset.\nThe AI is now untrained.",
+                    "Reset Complete",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
             }
         }
 
