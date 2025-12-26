@@ -205,29 +205,39 @@ namespace BeamGame
             
             // Control buttons
             _btnStart = new Button();
-            _btnStart.Text = "▶️ START GAME";
-            _btnStart.Location = new Point(250, 700);
-            _btnStart.Size = new Size(180, 45);
-            _btnStart.Font = new Font("Arial", 11, FontStyle.Bold);
+            _btnStart.Text = "▶️ START";
+            _btnStart.Location = new Point(30, 700);
+            _btnStart.Size = new Size(160, 45);
+            _btnStart.Font = new Font("Arial", 10, FontStyle.Bold);
             _btnStart.Click += BtnStart_Click;
             this.Controls.Add(_btnStart);
             
             _btnReset = new Button();
-            _btnReset.Text = "🔄 RESET SCORES";
-            _btnReset.Location = new Point(470, 700);
-            _btnReset.Size = new Size(180, 45);
-            _btnReset.Font = new Font("Arial", 11, FontStyle.Bold);
+            _btnReset.Text = "🔄 RESET";
+            _btnReset.Location = new Point(220, 700);
+            _btnReset.Size = new Size(160, 45);
+            _btnReset.Font = new Font("Arial", 10, FontStyle.Bold);
             _btnReset.Click += BtnReset_Click;
             this.Controls.Add(_btnReset);
             
             // AI Training button
             _btnTrainAI = new Button();
             _btnTrainAI.Text = "🎓 TRAIN AI";
-            _btnTrainAI.Location = new Point(690, 700);
-            _btnTrainAI.Size = new Size(180, 45);
-            _btnTrainAI.Font = new Font("Arial", 11, FontStyle.Bold);
+            _btnTrainAI.Location = new Point(410, 700);
+            _btnTrainAI.Size = new Size(160, 45);
+            _btnTrainAI.Font = new Font("Arial", 10, FontStyle.Bold);
             _btnTrainAI.Click += BtnTrainAI_Click;
             this.Controls.Add(_btnTrainAI);
+            
+            // Reset AI button
+            Button btnResetAI = new Button();
+            btnResetAI.Text = "🗑️ RESET AI";
+            btnResetAI.Location = new Point(600, 700);
+            btnResetAI.Size = new Size(160, 45);
+            btnResetAI.Font = new Font("Arial", 10, FontStyle.Bold);
+            btnResetAI.Click += BtnResetAI_Click;
+            btnResetAI.BackColor = Color.FromArgb(255, 240, 240);
+            this.Controls.Add(btnResetAI);
             
             // AI Status Panel
             Panel aiStatusPanel = new Panel();
@@ -659,6 +669,55 @@ namespace BeamGame
             
             _aiStatusLabel.Text = $"Level: {level}  |  Games Trained: {_aiGamesPlayed:N0}  |  Win Rate: {winRate:F1}%  |  " +
                                  $"States Learned: {qTableSize:N0}  |  Exploration: {explorationRate:P0}";
+        }
+                private void BtnResetAI_Click(object sender, EventArgs e)
+        {
+            var result = MessageBox.Show(
+                "This will delete all AI training data and reset the AI to beginner level.\n\n" +
+                "Are you sure you want to reset the AI?",
+                "Reset AI Knowledge",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+                
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    // Delete AI files
+                    if (System.IO.File.Exists(AI_DATA_FILE))
+                    {
+                        System.IO.File.Delete(AI_DATA_FILE);
+                    }
+                    
+                    string statsFile = "ai_stats.dat";
+                    if (System.IO.File.Exists(statsFile))
+                    {
+                        System.IO.File.Delete(statsFile);
+                    }
+                    
+                    // Reset AI player
+                    _aiPlayer = new ComputerPlayer(Player.Player2);
+                    _aiGamesPlayed = 0;
+                    _aiWins = 0;
+                    
+                    UpdateAIStatus();
+                    
+                    MessageBox.Show(
+                        "AI knowledge has been reset successfully!\n\n" +
+                        "The AI is now at beginner level and needs training.",
+                        "Reset Complete",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        $"Failed to reset AI: {ex.Message}",
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            }
         }
         
         private void BtnTrainAI_Click(object sender, EventArgs e)

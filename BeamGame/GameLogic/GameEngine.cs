@@ -10,7 +10,7 @@ namespace BeamGame.GameLogic
     {
         private GameBoard _board;
         private int _stepCount;
-        private const int MaxSteps = 1000;  // Maximum steps before time expires
+        private const int MaxSteps = 3600;  // Maximum steps before time expires (60 seconds at 60 FPS)
 
         public GameBoard Board => _board;
         public int StepCount => _stepCount;
