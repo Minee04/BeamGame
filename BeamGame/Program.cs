@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace TicTacToe
+namespace BeamGame
 {
     static class Program
     {
         /// <summary>
-        /// The main entry point for the application.
+        /// The main entry point for the Balance Beam Game application.
         /// </summary>
         [STAThread]
         static void Main()

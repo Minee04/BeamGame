@@ -1,0 +1,912 @@
+﻿using System;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Windows.Forms;
+using BeamGame.AI;
+using BeamGame.GameLogic;
+using BeamGame.Models;
+
+namespace BeamGame
+{
+    public partial class frmMain : Form
+    {
+        private GameEngine _gameEngine;
+        private QLearningAI _qLearningAI;
+        private AITrainer _trainer;
+        private Timer _gameTimer;
+        private Timer _aiTimer;
+        
+        private bool _isManualMode;
+        private bool _isTraining;
+        private bool _aiPlaying;
+        
+        private Panel _gamePanel;
+        private Label _statsLabel;
+        private Label _instructionsLabel;
+        private Button _btnManualPlay;
+        private Button _btnAIPlay;
+        private Button _btnTrainAI;
+        private Button _btnStopTraining;
+        private Button _btnReset;
+        private ProgressBar _progressBar;
+        
+        private const string QTablePath = "qtable_beam.dat";
+        
+        // Visual constants
+        private const int BEAM_WIDTH = 500;
+        private const int BEAM_HEIGHT = 20;
+        private const int BALL_RADIUS = 12;
+
+        public frmMain()
+        {
+            InitializeComponent();
+            InitializeGame();
+            SetupCustomUI();
+        }
+
+        private void InitializeGame()
+        {
+            _gameEngine = new GameEngine();
+            
+            // Try to load existing Q-table
+            _qLearningAI = new QLearningAI(
+                learningRate: 0.3,
+                discountFactor: 0.95,
+                explorationRate: 0.0,  // No exploration during play
+                explorationDecay: 0.999
+            );
+
+            try
+            {
+                _qLearningAI.LoadQTable(QTablePath);
+            }
+            catch
+            {
+                // Q-table doesn't exist yet
+            }
+
+            _trainer = new AITrainer(_qLearningAI);
+            
+            // Game timer for physics updates
+            _gameTimer = new Timer();
+            _gameTimer.Interval = 50; // 20 FPS
+            _gameTimer.Tick += GameTimer_Tick;
+            
+            // AI decision timer
+            _aiTimer = new Timer();
+            _aiTimer.Interval = 100; // AI decides every 100ms
+            _aiTimer.Tick += AITimer_Tick;
+        }
+
+        private void SetupCustomUI()
+        {
+            this.Text = "Balance Beam Game - Q-Learning Demo";
+            this.ClientSize = new Size(800, 700);
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.KeyPreview = true;
+            this.KeyDown += FrmMain_KeyDown;
+            
+            // Instructions panel at top
+            Panel instructionsPanel = new Panel();
+            instructionsPanel.Location = new Point(10, 10);
+            instructionsPanel.Size = new Size(760, 80);
+            instructionsPanel.BackColor = Color.FromArgb(230, 240, 255);
+            instructionsPanel.BorderStyle = BorderStyle.FixedSingle;
+            this.Controls.Add(instructionsPanel);
+            
+            Label titleLabel = new Label();
+            titleLabel.Text = "⚖️ BALANCE BEAM GAME ⚖️";
+            titleLabel.Font = new Font("Arial", 16, FontStyle.Bold);
+            titleLabel.Location = new Point(10, 5);
+            titleLabel.Size = new Size(740, 30);
+            titleLabel.TextAlign = ContentAlignment.MiddleCenter;
+            instructionsPanel.Controls.Add(titleLabel);
+            
+            _instructionsLabel = new Label();
+            _instructionsLabel.Text = "🎯 OBJECTIVE: Keep the ball balanced on the beam!\n" +
+                                     "🎮 MANUAL: Use ← → arrow keys  |  🤖 AI: Watch AI learn to balance";
+            _instructionsLabel.Font = new Font("Arial", 9);
+            _instructionsLabel.Location = new Point(10, 35);
+            _instructionsLabel.Size = new Size(740, 40);
+            _instructionsLabel.TextAlign = ContentAlignment.TopCenter;
+            instructionsPanel.Controls.Add(_instructionsLabel);
+            
+            // Game panel
+            _gamePanel = new Panel();
+            _gamePanel.Location = new Point(10, 100);
+            _gamePanel.Size = new Size(760, 350);
+            _gamePanel.BackColor = Color.FromArgb(245, 250, 255);
+            _gamePanel.BorderStyle = BorderStyle.FixedSingle;
+            _gamePanel.Paint += GamePanel_Paint;
+            this.Controls.Add(_gamePanel);
+            
+            // Stats panel
+            _statsLabel = new Label();
+            _statsLabel.Location = new Point(10, 460);
+            _statsLabel.Size = new Size(760, 80);
+            _statsLabel.Font = new Font("Consolas", 9);
+            _statsLabel.BackColor = Color.FromArgb(240, 240, 240);
+            _statsLabel.BorderStyle = BorderStyle.FixedSingle;
+            _statsLabel.Text = "Ready to start!";
+            this.Controls.Add(_statsLabel);
+            
+            // Progress bar
+            _progressBar = new ProgressBar();
+            _progressBar.Location = new Point(10, 550);
+            _progressBar.Size = new Size(760, 20);
+            _progressBar.Visible = false;
+            this.Controls.Add(_progressBar);
+            
+            // Control buttons
+            int btnY = 580;
+            int btnWidth = 145;
+            int btnSpacing = 10;
+            
+            _btnManualPlay = new Button();
+            _btnManualPlay.Text = "🎮 Play Manually";
+            _btnManualPlay.Location = new Point(10, btnY);
+            _btnManualPlay.Size = new Size(btnWidth, 40);
+            _btnManualPlay.Click += BtnManualPlay_Click;
+            this.Controls.Add(_btnManualPlay);
+            
+            _btnAIPlay = new Button();
+            _btnAIPlay.Text = "🤖 Watch AI Play";
+            _btnAIPlay.Location = new Point(10 + btnWidth + btnSpacing, btnY);
+            _btnAIPlay.Size = new Size(btnWidth, 40);
+            _btnAIPlay.Click += BtnAIPlay_Click;
+            this.Controls.Add(_btnAIPlay);
+            
+            _btnTrainAI = new Button();
+            _btnTrainAI.Text = "📚 Train AI (1000x)";
+            _btnTrainAI.Location = new Point(10 + (btnWidth + btnSpacing) * 2, btnY);
+            _btnTrainAI.Size = new Size(btnWidth, 40);
+            _btnTrainAI.Click += BtnTrainAI_Click;
+            this.Controls.Add(_btnTrainAI);
+            
+            _btnStopTraining = new Button();
+            _btnStopTraining.Text = "⏸️ Stop Training";
+            _btnStopTraining.Location = new Point(10 + (btnWidth + btnSpacing) * 3, btnY);
+            _btnStopTraining.Size = new Size(btnWidth, 40);
+            _btnStopTraining.Enabled = false;
+            _btnStopTraining.Click += BtnStopTraining_Click;
+            this.Controls.Add(_btnStopTraining);
+            
+            _btnReset = new Button();
+            _btnReset.Text = "🔄 Reset";
+            _btnReset.Location = new Point(10 + (btnWidth + btnSpacing) * 4, btnY);
+            _btnReset.Size = new Size(btnWidth, 40);
+            _btnReset.Click += BtnReset_Click;
+            this.Controls.Add(_btnReset);
+            
+            UpdateStats();
+        }
+
+        private void frmMain_Load(object sender, EventArgs e)
+        {
+            _gameEngine.Reset();
+            _gamePanel.Invalidate();
+        }
+
+        private void GamePanel_Paint(object sender, PaintEventArgs e)
+                _useQLearning = false;
+                _computerPlayer = null;
+                tbxP1.Text = "Player 1";
+                tbxP2.Text = "Player 2";
+            }
+            else if (rb.Name == "rbStrategicAI")
+            {
+        private void GamePanel_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            
+            int centerX = _gamePanel.Width / 2;
+            int beamY = _gamePanel.Height / 2 + 30;
+            
+            // Draw ground line
+            using (Pen groundPen = new Pen(Color.FromArgb(100, 100, 100), 3))
+            {
+                g.DrawLine(groundPen, 0, beamY + 50, _gamePanel.Width, beamY + 50);
+            }
+            
+            // Draw pivot (triangle)
+            int pivotSize = 30;
+            Point[] pivotPoints = new Point[]
+            {
+                new Point(centerX, beamY - 10),
+                new Point(centerX - pivotSize/2, beamY + 20),
+                new Point(centerX + pivotSize/2, beamY + 20)
+            };
+            g.FillPolygon(Brushes.Gray, pivotPoints);
+            g.DrawPolygon(Pens.Black, pivotPoints);
+            
+            // Draw beam (rotated)
+            g.TranslateTransform(centerX, beamY);
+            float beamAngle = (float)_gameEngine.Board.Beam.Angle;
+            g.RotateTransform(beamAngle);
+            
+            Rectangle beamRect = new Rectangle(-BEAM_WIDTH/2, -BEAM_HEIGHT/2, BEAM_WIDTH, BEAM_HEIGHT);
+            using (LinearGradientBrush beamBrush = new LinearGradientBrush(
+                beamRect, Color.SaddleBrown, Color.Peru, LinearGradientMode.Vertical))
+            {
+                g.FillRectangle(beamBrush, beamRect);
+            }
+            g.DrawRectangle(Pens.Black, beamRect);
+            
+            // Draw ball on beam
+            double ballPosOnBeam = _gameEngine.Board.Ball.Position; // -1 to 1
+            float ballXOnBeam = (float)(ballPosOnBeam * (BEAM_WIDTH / 2.0));
+            
+            g.ResetTransform();
+            
+            // Calculate ball world position (accounting for beam rotation)
+            double radians = beamAngle * Math.PI / 180.0;
+            float ballWorldX = centerX + ballXOnBeam * (float)Math.Cos(radians);
+            float ballWorldY = beamY + ballXOnBeam * (float)Math.Sin(radians) - BALL_RADIUS - BEAM_HEIGHT/2;
+            
+            // Draw ball
+            bool ballFell = _gameEngine.Board.HasBallFallen();
+            Color ballColor = ballFell ? Color.FromArgb(200, 50, 50) : Color.FromArgb(70, 130, 220);
+            
+            using (SolidBrush ballBrush = new SolidBrush(ballColor))
+            {
+                g.FillEllipse(ballBrush, 
+                    ballWorldX - BALL_RADIUS, 
+                    ballWorldY - BALL_RADIUS, 
+                    BALL_RADIUS * 2, 
+                    BALL_RADIUS * 2);
+            }
+            using (Pen ballPen = new Pen(Color.Black, 2))
+            {
+                g.DrawEllipse(ballPen, 
+                    ballWorldX - BALL_RADIUS, 
+                    ballWorldY - BALL_RADIUS, 
+                    BALL_RADIUS * 2, 
+                    BALL_RADIUS * 2);
+            }
+            
+            // Draw velocity indicator
+            double velocity = _gameEngine.Board.Ball.Velocity;
+            if (Math.Abs(velocity) > 0.01)
+            {
+                using (Pen velocityPen = new Pen(Color.Green, 2))
+                {
+                    velocityPen.EndCap = LineCap.ArrowAnchor;
+                    g.DrawLine(velocityPen,
+                        ballWorldX,
+                        ballWorldY,
+                        ballWorldX + (float)(velocity * 200),
+                        ballWorldY);
+                }
+            }
+            
+            // Draw danger zones (edges)
+            using (Pen dangerPen = new Pen(Color.Red, 2))
+            {
+                dangerPen.DashStyle = DashStyle.Dash;
+                g.DrawLine(dangerPen, 40, beamY - 80, 40, beamY + 80);
+                g.DrawLine(dangerPen, _gamePanel.Width - 40, beamY - 80, _gamePanel.Width - 40, beamY + 80);
+            }
+            
+            // Draw game over message
+            if (ballFell)
+            {
+                using (Font font = new Font("Arial", 24, FontStyle.Bold))
+                {
+                    string gameOverText = "Ball Fell Off!";
+                    SizeF textSize = g.MeasureString(gameOverText, font);
+                    
+                    using (SolidBrush shadowBrush = new SolidBrush(Color.FromArgb(128, 0, 0, 0)))
+                    {
+                        g.DrawString(gameOverText, font, shadowBrush, 
+                            (_gamePanel.Width - textSize.Width) / 2 + 2, 
+                            50 + 2);
+                    }
+                    
+                    g.DrawString(gameOverText, font, Brushes.Red, 
+                        (_gamePanel.Width - textSize.Width) / 2, 
+                        50);
+                }
+            }
+        }
+
+        private void GameTimer_Tick(object sender, EventArgs e)
+        {
+            if (!_gameEngine.Board.HasBallFallen())
+            {
+                BeamAction action = BeamAction.Center;
+                
+                if (_isManualMode)
+                {
+                    // Manual mode - no automatic action
+                    action = BeamAction.Center;
+                }
+                
+                _gameEngine.Step(action);
+                _gamePanel.Invalidate();
+                UpdateStats();
+            }
+            else
+            {
+                if (_isTraining)
+                {
+                    // Auto-restart for training
+                    _gameEngine.Reset();
+                }
+                else
+                {
+                    _gameTimer.Stop();
+                    _aiTimer.Stop();
+                }
+            }
+        }
+
+        private void AITimer_Tick(object sender, EventArgs e)
+        {
+            if (_aiPlaying || _isTraining)
+            {
+                if (!_gameEngine.Board.HasBallFallen())
+                {
+                    string currentState = _gameEngine.GetStateString();
+                    BeamAction action = _qLearningAI.DetermineNextAction(_gameEngine);
+                    
+                    double reward = CalculateStepReward();
+                    _qLearningAI.RecordTransition(currentState, action, reward);
+                    
+                    _gameEngine.Step(action);
+                }
+                else if (_isTraining)
+                {
+                    // Learn from game
+                    double finalReward = -100.0; // Penalty for dropping ball
+                    _qLearningAI.LearnFromGame(finalReward);
+                    _gameEngine.Reset();
+                }
+            }
+        }
+
+        private double CalculateStepReward()
+        {
+            var ball = _gameEngine.Board.Ball;
+            
+            // Small positive reward for staying alive
+            double reward = 0.1;
+            
+            // Penalize being far from center
+            reward -= Math.Abs(ball.Position) * 0.3;
+            
+            // Penalize high velocity (want stable)
+            reward -= Math.Abs(ball.Velocity) * 1.5;
+            
+            return reward;
+        }
+
+        private void UpdateStats()
+        {
+            var ball = _gameEngine.Board.Ball;
+            var beam = _gameEngine.Board.Beam;
+            
+            string mode = _isTraining ? "🔄 TRAINING" : 
+                         _isManualMode ? "🎮 MANUAL PLAY" : 
+                         _aiPlaying ? "🤖 AI PLAYING" : "⏸️ PAUSED";
+            
+            _statsLabel.Text = 
+                $"Mode: {mode}\n" +
+                $"Score: {_gameEngine.Score:F0} points  |  Time: {_gameEngine.StepCount * 0.05:F2}s\n" +
+                $"Ball Position: {ball.Position:F3}  |  Velocity: {ball.Velocity:F3}\n" +
+                $"Beam Angle: {beam.Angle:F2}°  |  Q-States Learned: {_qLearningAI.QTableSize}";
+        }
+
+        private void BtnManualPlay_Click(object sender, EventArgs e)
+        {
+            _gameEngine.Reset();
+            _isManualMode = true;
+            _aiPlaying = false;
+            _isTraining = false;
+            
+            _gameTimer.Start();
+            _aiTimer.Stop();
+            
+            _instructionsLabel.Text = "🎮 MANUAL MODE: Use ← → arrow keys to tilt the beam. Keep the ball balanced!";
+            _instructionsLabel.BackColor = Color.FromArgb(200, 255, 200);
+            
+            UpdateStats();
+            _gamePanel.Invalidate();
+            
+            MessageBox.Show("Use ← → arrow keys to tilt the beam!\nTry to keep the ball balanced as long as possible.", 
+                "Manual Control", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void BtnAIPlay_Click(object sender, EventArgs e)
+        {
+            if (_qLearningAI.QTableSize == 0)
+            {
+                MessageBox.Show("AI hasn't been trained yet!\n\nClick 'Train AI' first to teach it how to balance.", 
+                    "AI Not Trained", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            
+            _gameEngine.Reset();
+            _isManualMode = false;
+            _aiPlaying = true;
+            _isTraining = false;
+            
+            _gameTimer.Start();
+            _aiTimer.Start();
+            
+            _instructionsLabel.Text = "🤖 AI PLAYING: Watch the trained AI balance the ball!";
+            _instructionsLabel.BackColor = Color.FromArgb(200, 220, 255);
+            
+            UpdateStats();
+            _gamePanel.Invalidate();
+        }
+
+        private void BtnTrainAI_Click(object sender, EventArgs e)
+        {
+            _isTraining = true;
+            _isManualMode = false;
+            _aiPlaying = false;
+            
+            _btnTrainAI.Enabled = false;
+            _btnStopTraining.Enabled = true;
+            _btnManualPlay.Enabled = false;
+            _btnAIPlay.Enabled = false;
+            
+            _progressBar.Visible = true;
+            _progressBar.Value = 0;
+            _progressBar.Maximum = 1000;
+            
+            _instructionsLabel.Text = "📚 TRAINING MODE: AI is learning through trial and error...";
+            _instructionsLabel.BackColor = Color.FromArgb(255, 255, 200);
+            
+            // Start background training
+            System.ComponentModel.BackgroundWorker worker = new System.ComponentModel.BackgroundWorker();
+            worker.WorkerReportsProgress = true;
+            
+            worker.DoWork += (s, args) =>
+            {
+                _trainer.TrainAI(1000, (game, stats) =>
+                {
+                    worker.ReportProgress(game, stats);
+                });
+            };
+            
+            worker.ProgressChanged += (s, args) =>
+            {
+                _progressBar.Value = (int)args.UserState is TrainingStats stats ? 
+                    ((TrainingStats)args.UserState).TotalGames : (int)args.ProgressPercentage;
+                UpdateStats();
+            };
+            
+            worker.RunWorkerCompleted += (s, args) =>
+            {
+                _isTraining = false;
+                _btnTrainAI.Enabled = true;
+                _btnStopTraining.Enabled = false;
+                _btnManualPlay.Enabled = true;
+                _btnAIPlay.Enabled = true;
+                _progressBar.Visible = false;
+                
+                _qLearningAI.SaveQTable(QTablePath);
+                
+                _instructionsLabel.Text = "✅ Training Complete! AI has learned to balance the ball.";
+                _instructionsLabel.BackColor = Color.FromArgb(200, 255, 200);
+                
+                MessageBox.Show($"Training complete!\n\nAI learned {_qLearningAI.QTableSize} states.\n\nClick 'Watch AI Play' to see it in action!", 
+                    "Training Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                UpdateStats();
+            };
+            
+            worker.RunWorkerAsync();
+        }
+
+        private void BtnStopTraining_Click(object sender, EventArgs e)
+        {
+            _isTraining = false;
+            _gameTimer.Stop();
+            _aiTimer.Stop();
+            
+            _btnTrainAI.Enabled = true;
+            _btnStopTraining.Enabled = false;
+            _btnManualPlay.Enabled = true;
+            _btnAIPlay.Enabled = true;
+            _progressBar.Visible = false;
+            
+            _qLearningAI.SaveQTable(QTablePath);
+            
+            _instructionsLabel.Text = "⏸️ Training paused. Progress has been saved.";
+            _instructionsLabel.BackColor = Color.FromArgb(240, 240, 240);
+        }
+
+        private void BtnReset_Click(object sender, EventArgs e)
+        {
+            _gameEngine.Reset();
+            _gameTimer.Stop();
+            _aiTimer.Stop();
+            
+            _isManualMode = false;
+            _aiPlaying = false;
+            _isTraining = false;
+            
+            _instructionsLabel.Text = "🎯 OBJECTIVE: Keep the ball balanced on the beam!\n" +
+                                     "🎮 MANUAL: Use ← → arrow keys  |  🤖 AI: Watch AI learn to balance";
+            _instructionsLabel.BackColor = Color.FromArgb(230, 240, 255);
+            
+            UpdateStats();
+            _gamePanel.Invalidate();
+        }
+
+        private void FrmMain_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (_isManualMode && _gameTimer.Enabled)
+            {
+                if (e.KeyCode == Keys.Left)
+                {
+                    _gameEngine.Step(BeamAction.TiltLeft);
+                    _gamePanel.Invalidate();
+                }
+                else if (e.KeyCode == Keys.Right)
+                {
+                    _gameEngine.Step(BeamAction.TiltRight);
+                    _gamePanel.Invalidate();
+                }
+            }
+        }
+
+        private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            _gameTimer?.Stop();
+            _aiTimer?.Stop();
+            
+            try
+            {
+                _qLearningAI.SaveQTable(QTablePath);
+            }
+            catch
+            {
+                // Ignore save errors on exit
+            }
+        }
+    }
+}
+        {
+            int qTableSize = _qLearningAI.QTableSize;
+
+            if (qTableSize == 0)
+            {
+                lblAIStatusValue.Text = "❌ Not trained\n\nTrain the AI using:\nSettings → Train AI";
+                lblAIStatusValue.ForeColor = Color.DarkRed;
+            }
+            else if (qTableSize < 100)
+            {
+                lblAIStatusValue.Text = $"⚠️ Beginner\n\nStates Learned: {qTableSize:N0}\n\nTrain more for better play";
+                lblAIStatusValue.ForeColor = Color.DarkOrange;
+            }
+            else if (qTableSize < 500)
+            {
+                lblAIStatusValue.Text = $"📚 Learning\n\nStates Learned: {qTableSize:N0}\n\nMaking progress!";
+                lblAIStatusValue.ForeColor = Color.DarkGoldenrod;
+            }
+            else if (qTableSize < 2000)
+            {
+                lblAIStatusValue.Text = $"🎯 Competent\n\nStates Learned: {qTableSize:N0}\n\nPlays well";
+                lblAIStatusValue.ForeColor = Color.DarkBlue;
+            }
+            else
+            {
+                lblAIStatusValue.Text = $"🏆 Expert\n\nStates Learned: {qTableSize:N0}\n\nNear-optimal play!";
+                lblAIStatusValue.ForeColor = Color.DarkGreen;
+            }
+        }
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Created by Mine, 2022", "About");
+        }
+
+        private void newGameToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            StartNewGame();
+        }
+
+        /// <summary>
+        /// Starts a new game by resetting the engine and UI
+        /// </summary>
+        private void StartNewGame()
+        {
+            _gameEngine.Reset();
+            ResetBoardUI();
+        }
+
+        /// <summary>
+        /// Resets all buttons on the UI board
+        /// </summary>
+        private void ResetBoardUI()
+        {
+            foreach (var button in _buttonToPosition.Keys)
+            {
+                button.Enabled = true;
+                button.Text = "";
+            }
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show("Are you sure you want to exit the program?", "Exit Application", MessageBoxButtons.YesNo);
+            if (result == System.Windows.Forms.DialogResult.Yes)
+            {
+                Application.Exit();
+            }
+        }
+
+        private void btnClick(object sender, EventArgs e)
+        {
+            Button clickedButton = (Button)sender;
+            
+            if (!_buttonToPosition.ContainsKey(clickedButton))
+                return;
+
+            ProcessPlayerMove(clickedButton);
+        }
+
+        /// <summary>
+        /// Processes a player's move and handles game flow
+        /// </summary>
+        private void ProcessPlayerMove(Button button)
+        {
+            CellPosition position = _buttonToPosition[button];
+            
+            // Store current player before making the move
+            PlayerType currentPlayer = _gameEngine.CurrentPlayer;
+            
+            // Make the move in the engine
+            if (!_gameEngine.MakeMove(position.Row, position.Column))
+                return;
+
+            // Update UI with the player who just moved
+            button.Text = currentPlayer == PlayerType.X ? "X" : "O";
+            button.Enabled = false;
+
+            // Check for game end
+            GameResult result = _gameEngine.CheckGameState();
+            if (result.State != Models.GameState.InProgress)
+            {
+                HandleGameEnd(result);
+                return;
+            }
+
+            // Switch player and check for computer move
+            _gameEngine.SwitchPlayer();
+
+            if (_isAgainstComputer && _gameEngine.CurrentPlayer == PlayerType.O)
+            {
+                ProcessComputerMove();
+            }
+        }
+
+        /// <summary>
+        /// Processes the computer's move
+        /// </summary>
+        private void ProcessComputerMove()
+        {
+            CellPosition computerMove = _computerPlayer.GetNextMove(_gameEngine);
+            
+            if (computerMove != null)
+            {
+                // Make the move
+                _gameEngine.MakeMove(computerMove.Row, computerMove.Column);
+
+                // Update UI
+                Button button = _positionToButton[computerMove];
+                button.Text = "O";
+                button.Enabled = false;
+
+                // Check for game end
+                GameResult result = _gameEngine.CheckGameState();
+                if (result.State != Models.GameState.InProgress)
+                {
+                    HandleGameEnd(result);
+                    return;
+                }
+
+                // Switch back to player
+                _gameEngine.SwitchPlayer();
+            }
+        }
+
+        /// <summary>
+        /// Handles the end of a game (win or draw)
+        /// </summary>
+        private void HandleGameEnd(GameResult result)
+        {
+            // If using Q-Learning, let it learn from this game
+            if (_useQLearning && _isAgainstComputer)
+            {
+                _qLearningAI.LearnFromGame(result);
+                _qLearningAI.SaveQTable(QTablePath);
+                UpdateAIStatus(); // Refresh status display
+            }
+
+            DisableAllButtons();
+
+            string message = "";
+            string winner = "";
+
+            switch (result.State)
+            {
+                case Models.GameState.XWins:
+                    winner = tbxP1.Text;
+                    XWinCount.Text = (int.Parse(XWinCount.Text) + 1).ToString();
+                    message = winner == "You" ? $"{winner} Win!" : $"{winner} Wins!";
+                    break;
+
+                case Models.GameState.OWins:
+                    winner = tbxP2.Text;
+                    OWinCount.Text = (int.Parse(OWinCount.Text) + 1).ToString();
+                    message = winner == "You" ? $"{winner} Win!" : $"{winner} Wins!";
+                    break;
+
+                case Models.GameState.Draw:
+                    message = "Draw!";
+                    DrawCount.Text = (int.Parse(DrawCount.Text) + 1).ToString();
+                    break;
+            }
+
+            MessageBox.Show(message, result.State == Models.GameState.Draw ? "Result" : "Congrats!");
+            
+            // Start new game and reset Q-Learning history
+            if (_useQLearning)
+            {
+                _qLearningAI.StartNewGame();
+            }
+            
+            StartNewGame();
+        }
+
+        /// <summary>
+        /// Disables all buttons on the board
+        /// </summary>
+        private void DisableAllButtons()
+        {
+            foreach (var button in _buttonToPosition.Keys)
+            {
+                button.Enabled = false;
+            }
+        }
+        private void btnEnter(object sender, EventArgs e)
+        {
+            Button button = (Button)sender;
+            if (button.Enabled && _buttonToPosition.ContainsKey(button))
+            {
+                button.Text = _gameEngine.CurrentPlayer == PlayerType.X ? "X" : "O";
+            }
+        }
+
+        private void btnLeave(object sender, EventArgs e)
+        {
+            Button button = (Button)sender;
+            if (button.Enabled)
+            {
+                button.Text = "";
+            }
+        }
+        private void resetScoreToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OWinCount.Text = "0";
+            DrawCount.Text = "0";
+            XWinCount.Text = "0";
+        }
+
+        private void trainAIToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show(
+                "Train Q-Learning AI?\n\nThis will play 10,000 games for training.\nIt may take 5-10 seconds.\n\nContinue?",
+                "Train AI",
+                MessageBoxButtons.YesNo
+            );
+
+            if (result == DialogResult.Yes)
+            {
+                TrainQLearningAI();
+            }
+        }
+
+        private void resetAIToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show(
+                "Reset Q-Learning AI?\n\nThis will delete all learned knowledge.\nThe AI will need to be retrained.\n\nContinue?",
+                "Reset AI",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning
+            );
+
+            if (result == DialogResult.Yes)
+            {
+                _qLearningAI.ResetKnowledge();
+                
+                // Delete qtable.dat file if it exists
+                if (System.IO.File.Exists(QTablePath))
+                {
+                    System.IO.File.Delete(QTablePath);
+                }
+                
+                UpdateAIStatus();
+                MessageBox.Show(
+                    "AI knowledge has been reset.\nThe AI is now untrained.",
+                    "Reset Complete",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+            }
+        }
+
+        /// <summary>
+        /// Trains the Q-Learning AI by playing games against itself
+        /// </summary>
+        private void TrainQLearningAI()
+        {
+            const int totalGames = 10000;
+
+            // Create a training AI with higher exploration
+            var trainingAI = new QLearningAI(
+                learningRate: 0.3,
+                discountFactor: 0.95,
+                explorationRate: 1.0,  // Start with full exploration
+                explorationDecay: 0.998
+            );
+
+            // Load existing knowledge if available
+            try
+            {
+                trainingAI.LoadQTable(QTablePath);
+            }
+            catch { }
+
+            var trainer = new AITrainer(trainingAI, new QLearningAI());
+
+            // Create and show progress form
+            using (var progressForm = new TrainingProgressForm())
+            {
+                progressForm.Show();
+                double currentExplorationRate = trainingAI.ExplorationRate;
+                progressForm.UpdateProgress(0, totalGames, new TrainingStats(), trainingAI.QTableSize, currentExplorationRate);
+
+                // Train with progress updates every 100 games
+                var stats = trainer.TrainAI(totalGames, (games, currentStats) =>
+                {
+                    currentExplorationRate = trainingAI.ExplorationRate;
+                    progressForm.UpdateProgress(games, totalGames, currentStats, trainingAI.QTableSize, currentExplorationRate);
+                    
+                    if (progressForm.IsCancelled)
+                    {
+                        // Allow early stopping
+                        throw new OperationCanceledException();
+                    }
+                });
+
+                // Final update
+                progressForm.UpdateProgress(totalGames, totalGames, stats, trainingAI.QTableSize, trainingAI.ExplorationRate);
+
+                // Save the trained Q-table
+                trainingAI.SaveQTable(QTablePath);
+
+                // Reload the Q-table into the game AI
+                _qLearningAI.LoadQTable(QTablePath);
+
+                // Update AI status display
+                UpdateAIStatus();
+
+                MessageBox.Show(
+                    $"Training Complete!\n\n{stats}\n\nQ-Table Size: {trainingAI.QTableSize:N0} states\nExploration Rate: {trainingAI.ExplorationRate * 100:F1}%",
+                    "Training Results",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+            }
+        }
+        
+    }
+}

@@ -1,5 +1,5 @@
 ﻿
-namespace TicTacToe
+namespace BeamGame
 {
     partial class frmMain
     {
@@ -29,75 +29,23 @@ namespace TicTacToe
         /// </summary>
         private void InitializeComponent()
         {
-            this.menuStrip1 = new System.Windows.Forms.MenuStrip();
-            this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.newGameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.resetScoreToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.trainAIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.resetAIToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.A1 = new System.Windows.Forms.Button();
-            this.A2 = new System.Windows.Forms.Button();
-            this.A3 = new System.Windows.Forms.Button();
-            this.B1 = new System.Windows.Forms.Button();
-            this.B2 = new System.Windows.Forms.Button();
-            this.B3 = new System.Windows.Forms.Button();
-            this.C1 = new System.Windows.Forms.Button();
-            this.C2 = new System.Windows.Forms.Button();
-            this.C3 = new System.Windows.Forms.Button();
-            this.lblCounterDraw = new System.Windows.Forms.Label();
-            this.XWinCount = new System.Windows.Forms.Label();
-            this.OWinCount = new System.Windows.Forms.Label();
-            this.DrawCount = new System.Windows.Forms.Label();
-            this.tbxP1 = new System.Windows.Forms.TextBox();
-            this.tbxP2 = new System.Windows.Forms.TextBox();
-            this.grpGameMode = new System.Windows.Forms.GroupBox();
-            this.rbQLearningAI = new System.Windows.Forms.RadioButton();
-            this.rbStrategicAI = new System.Windows.Forms.RadioButton();
-            this.rbPlayerVsPlayer = new System.Windows.Forms.RadioButton();
-            this.lblAIStatus = new System.Windows.Forms.Label();
-            this.lblAIStatusValue = new System.Windows.Forms.Label();
-            this.menuStrip1.SuspendLayout();
-            this.grpGameMode.SuspendLayout();
             this.SuspendLayout();
             // 
-            // menuStrip1
+            // frmMain
             // 
-            this.menuStrip1.GripMargin = new System.Windows.Forms.Padding(2, 2, 0, 2);
-            this.menuStrip1.ImageScalingSize = new System.Drawing.Size(24, 24);
-            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.fileToolStripMenuItem,
-            this.helpToolStripMenuItem});
-            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
-            this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Padding = new System.Windows.Forms.Padding(12, 4, 0, 4);
-            this.menuStrip1.Size = new System.Drawing.Size(484, 40);
-            this.menuStrip1.TabIndex = 0;
-            this.menuStrip1.Text = "menuStrip1";
-            // 
-            // fileToolStripMenuItem
-            // 
-            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.newGameToolStripMenuItem,
-            this.resetScoreToolStripMenuItem,
-            this.trainAIToolStripMenuItem,
-            this.resetAIToolStripMenuItem,
-            this.exitToolStripMenuItem});
-            this.fileToolStripMenuItem.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(99, 32);
-            this.fileToolStripMenuItem.Text = "Settings";
-            // 
-            // newGameToolStripMenuItem
-            // 
-            this.newGameToolStripMenuItem.Name = "newGameToolStripMenuItem";
-            this.newGameToolStripMenuItem.Size = new System.Drawing.Size(214, 36);
-            this.newGameToolStripMenuItem.Text = "New Game";
-            this.newGameToolStripMenuItem.Click += new System.EventHandler(this.newGameToolStripMenuItem_Click);
-            // 
-            // resetScoreToolStripMenuItem
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(800, 700);
+            this.Name = "frmMain";
+            this.Text = "Balance Beam Game";
+            this.Load += new System.EventHandler(this.frmMain_Load);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_FormClosing);
+            this.ResumeLayout(false);
+        }
+
+        #endregion
+    }
+}
             // 
             this.resetScoreToolStripMenuItem.Name = "resetScoreToolStripMenuItem";
             this.resetScoreToolStripMenuItem.Size = new System.Drawing.Size(214, 36);
