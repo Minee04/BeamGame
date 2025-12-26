@@ -52,7 +52,14 @@ namespace TicTacToe
             this.DrawCount = new System.Windows.Forms.Label();
             this.tbxP1 = new System.Windows.Forms.TextBox();
             this.tbxP2 = new System.Windows.Forms.TextBox();
+            this.grpGameMode = new System.Windows.Forms.GroupBox();
+            this.rbQLearningAI = new System.Windows.Forms.RadioButton();
+            this.rbStrategicAI = new System.Windows.Forms.RadioButton();
+            this.rbPlayerVsPlayer = new System.Windows.Forms.RadioButton();
+            this.lblAIStatus = new System.Windows.Forms.Label();
+            this.lblAIStatusValue = new System.Windows.Forms.Label();
             this.menuStrip1.SuspendLayout();
+            this.grpGameMode.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -296,7 +303,6 @@ namespace TicTacToe
             this.tbxP1.TabIndex = 18;
             this.tbxP1.Text = "Player 1";
             this.tbxP1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            this.tbxP1.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
             // 
             // tbxP2
             // 
@@ -310,12 +316,83 @@ namespace TicTacToe
             this.tbxP2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.tbxP2.TextChanged += new System.EventHandler(this.tbxP2_TextChanged);
             // 
+            // grpGameMode
+            // 
+            this.grpGameMode.Controls.Add(this.rbQLearningAI);
+            this.grpGameMode.Controls.Add(this.rbStrategicAI);
+            this.grpGameMode.Controls.Add(this.rbPlayerVsPlayer);
+            this.grpGameMode.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.grpGameMode.Location = new System.Drawing.Point(16, 580);
+            this.grpGameMode.Name = "grpGameMode";
+            this.grpGameMode.Size = new System.Drawing.Size(220, 130);
+            this.grpGameMode.TabIndex = 20;
+            this.grpGameMode.TabStop = false;
+            this.grpGameMode.Text = "Game Mode";
+            // 
+            // rbQLearningAI
+            // 
+            this.rbQLearningAI.AutoSize = true;
+            this.rbQLearningAI.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.rbQLearningAI.Location = new System.Drawing.Point(10, 90);
+            this.rbQLearningAI.Name = "rbQLearningAI";
+            this.rbQLearningAI.Size = new System.Drawing.Size(182, 26);
+            this.rbQLearningAI.TabIndex = 2;
+            this.rbQLearningAI.Text = "vs Q-Learning AI";
+            this.rbQLearningAI.UseVisualStyleBackColor = true;
+            this.rbQLearningAI.CheckedChanged += new System.EventHandler(this.GameModeChanged);
+            // 
+            // rbStrategicAI
+            // 
+            this.rbStrategicAI.AutoSize = true;
+            this.rbStrategicAI.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.rbStrategicAI.Location = new System.Drawing.Point(10, 60);
+            this.rbStrategicAI.Name = "rbStrategicAI";
+            this.rbStrategicAI.Size = new System.Drawing.Size(166, 26);
+            this.rbStrategicAI.TabIndex = 1;
+            this.rbStrategicAI.Text = "vs Strategic AI";
+            this.rbStrategicAI.UseVisualStyleBackColor = true;
+            this.rbStrategicAI.CheckedChanged += new System.EventHandler(this.GameModeChanged);
+            // 
+            // rbPlayerVsPlayer
+            // 
+            this.rbPlayerVsPlayer.AutoSize = true;
+            this.rbPlayerVsPlayer.Checked = true;
+            this.rbPlayerVsPlayer.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.rbPlayerVsPlayer.Location = new System.Drawing.Point(10, 30);
+            this.rbPlayerVsPlayer.Name = "rbPlayerVsPlayer";
+            this.rbPlayerVsPlayer.Size = new System.Drawing.Size(173, 26);
+            this.rbPlayerVsPlayer.TabIndex = 0;
+            this.rbPlayerVsPlayer.TabStop = true;
+            this.rbPlayerVsPlayer.Text = "Player vs Player";
+            this.rbPlayerVsPlayer.UseVisualStyleBackColor = true;
+            this.rbPlayerVsPlayer.CheckedChanged += new System.EventHandler(this.GameModeChanged);
+            // 
+            // lblAIStatus
+            // 
+            this.lblAIStatus.AutoSize = true;
+            this.lblAIStatus.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblAIStatus.Location = new System.Drawing.Point(242, 590);
+            this.lblAIStatus.Name = "lblAIStatus";
+            this.lblAIStatus.Size = new System.Drawing.Size(105, 22);
+            this.lblAIStatus.TabIndex = 21;
+            this.lblAIStatus.Text = "AI Status:";
+            // 
+            // lblAIStatusValue
+            // 
+            this.lblAIStatusValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblAIStatusValue.Location = new System.Drawing.Point(242, 615);
+            this.lblAIStatusValue.Name = "lblAIStatusValue";
+            this.lblAIStatusValue.Size = new System.Drawing.Size(220, 85);
+            this.lblAIStatusValue.TabIndex = 22;
+            this.lblAIStatusValue.Text = "Not trained";
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(484, 576);
-            this.Controls.Add(this.tbxP2);
+            this.ClientSize = new System.Drawing.Size(484, 720);            this.Controls.Add(this.lblAIStatusValue);
+            this.Controls.Add(this.lblAIStatus);
+            this.Controls.Add(this.grpGameMode);            this.Controls.Add(this.tbxP2);
             this.Controls.Add(this.tbxP1);
             this.Controls.Add(this.DrawCount);
             this.Controls.Add(this.OWinCount);
@@ -341,6 +418,8 @@ namespace TicTacToe
             this.Load += new System.EventHandler(this.frmMain_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            this.grpGameMode.ResumeLayout(false);
+            this.grpGameMode.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -371,6 +450,12 @@ namespace TicTacToe
         private System.Windows.Forms.Label DrawCount;
         private System.Windows.Forms.TextBox tbxP1;
         private System.Windows.Forms.TextBox tbxP2;
+        private System.Windows.Forms.GroupBox grpGameMode;
+        private System.Windows.Forms.RadioButton rbQLearningAI;
+        private System.Windows.Forms.RadioButton rbStrategicAI;
+        private System.Windows.Forms.RadioButton rbPlayerVsPlayer;
+        private System.Windows.Forms.Label lblAIStatus;
+        private System.Windows.Forms.Label lblAIStatusValue;
     }
 }
 

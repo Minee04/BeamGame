@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using TicTacToe.AI;
 using TicTacToe.GameLogic;
@@ -71,55 +67,95 @@ namespace TicTacToe
             };
 
             _positionToButton = _buttonToPosition.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
+
+            // Initialize UI state
+            UpdateAIStatus();
         }
 
         private void frmMain_Load(object sender, EventArgs e)
         {
-            if (tbxP1.Text == "Player 1" && tbxP2.Text == "Player 2")
-            {
-                DialogResult result = MessageBox.Show("Do you want to play against the AI?", "Game Mode", MessageBoxButtons.YesNo);
-                if (result == System.Windows.Forms.DialogResult.Yes)
-                {
-                    tbxP2.Text = "Computer";
-                    // SetupComputerGame() will be called by tbxP2_TextChanged
-                }
-            }
+            // Form is loaded, game mode can be selected via radio buttons
+            UpdateAIStatus();
+        }
+
+        private void tbxP2_TextChanged(object sender, EventArgs e)
+        {
+            // Keep this for compatibility but main switching is via radio buttons
         }
 
         /// <summary>
-        /// Sets up a game against the computer
+        /// Handles game mode changes from radio buttons
         /// </summary>
-        private void SetupComputerGame()
+        private void GameModeChanged(object sender, EventArgs e)
         {
-            _isAgainstComputer = true;
-            
-            // Ask if user wants Q-Learning AI or Strategic AI
-            DialogResult qLearningChoice = MessageBox.Show(
-                "Use Q-Learning AI (learns from experience)?\n\nYes = Q-Learning AI\nNo = Strategic AI",
-                "AI Type",
-                MessageBoxButtons.YesNoCancel
-            );
+            RadioButton rb = sender as RadioButton;
+            if (rb == null || !rb.Checked)
+                return;
 
-            if (qLearningChoice == DialogResult.Cancel)
+            // Start a new game when mode changes
+            StartNewGame();
+
+            if (rb.Name == "rbPlayerVsPlayer")
             {
                 _isAgainstComputer = false;
+                _useQLearning = false;
+                _computerPlayer = null;
+                tbxP1.Text = "Player 1";
                 tbxP2.Text = "Player 2";
-                return;
             }
-
-            _useQLearning = (qLearningChoice == DialogResult.Yes);
-
-            if (_useQLearning)
+            else if (rb.Name == "rbStrategicAI")
             {
+                _isAgainstComputer = true;
+                _useQLearning = false;
+                _computerPlayer = new ComputerPlayer(PlayerType.O, new StrategicAI());
+                tbxP1.Text = "You";
+                tbxP2.Text = "Strategic AI";
+            }
+            else if (rb.Name == "rbQLearningAI")
+            {
+                _isAgainstComputer = true;
+                _useQLearning = true;
                 _computerPlayer = new ComputerPlayer(PlayerType.O, _qLearningAI);
                 _qLearningAI.StartNewGame();
+                tbxP1.Text = "You";
+                tbxP2.Text = "Q-Learning AI";
+            }
+
+            UpdateAIStatus();
+        }
+
+        /// <summary>
+        /// Updates the AI status display with training information
+        /// </summary>
+        private void UpdateAIStatus()
+        {
+            int qTableSize = _qLearningAI.QTableSize;
+
+            if (qTableSize == 0)
+            {
+                lblAIStatusValue.Text = "❌ Not trained\n\nTrain the AI using:\nSettings → Train AI";
+                lblAIStatusValue.ForeColor = Color.DarkRed;
+            }
+            else if (qTableSize < 100)
+            {
+                lblAIStatusValue.Text = $"⚠️ Beginner\n\nStates Learned: {qTableSize:N0}\n\nTrain more for better play";
+                lblAIStatusValue.ForeColor = Color.DarkOrange;
+            }
+            else if (qTableSize < 500)
+            {
+                lblAIStatusValue.Text = $"📚 Learning\n\nStates Learned: {qTableSize:N0}\n\nMaking progress!";
+                lblAIStatusValue.ForeColor = Color.DarkGoldenrod;
+            }
+            else if (qTableSize < 2000)
+            {
+                lblAIStatusValue.Text = $"🎯 Competent\n\nStates Learned: {qTableSize:N0}\n\nPlays well";
+                lblAIStatusValue.ForeColor = Color.DarkBlue;
             }
             else
             {
-                _computerPlayer = new ComputerPlayer(PlayerType.O, new StrategicAI());
+                lblAIStatusValue.Text = $"🏆 Expert\n\nStates Learned: {qTableSize:N0}\n\nNear-optimal play!";
+                lblAIStatusValue.ForeColor = Color.DarkGreen;
             }
-
-            tbxP1.Text = "You";
         }
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
@@ -247,6 +283,7 @@ namespace TicTacToe
             {
                 _qLearningAI.LearnFromGame(result);
                 _qLearningAI.SaveQTable(QTablePath);
+                UpdateAIStatus(); // Refresh status display
             }
 
             DisableAllButtons();
@@ -386,30 +423,15 @@ namespace TicTacToe
                 // Reload the Q-table into the game AI
                 _qLearningAI.LoadQTable(QTablePath);
 
+                // Update AI status display
+                UpdateAIStatus();
+
                 MessageBox.Show(
                     $"Training Complete!\n\n{stats}\n\nQ-Table Size: {trainingAI.QTableSize:N0} states\nExploration Rate: {trainingAI.ExplorationRate * 100:F1}%",
                     "Training Results",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information
                 );
-            }
-        }
-
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-        private void tbxP2_TextChanged(object sender, EventArgs e)
-        {
-            if (tbxP2.Text.ToUpper() == "COMPUTER")
-            {
-                SetupComputerGame();
-            }
-            else
-            {
-                _isAgainstComputer = false;
-                _computerPlayer = null;
-                tbxP1.Text = "Player 1";
             }
         }
         
