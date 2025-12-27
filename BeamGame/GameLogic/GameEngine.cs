@@ -9,17 +9,16 @@ namespace BeamGame.GameLogic
     public class GameEngine
     {
         private GameBoard _board;
-        private int _stepCount;
-        private const int MaxSteps = 3600;  // Maximum steps before time expires (60 seconds at 60 FPS)
+        private double _elapsedTime;
+        private const double MaxGameTime = 30.0; // 30 seconds
 
         public GameBoard Board => _board;
-        public int StepCount => _stepCount;
-        public double GameTime => _stepCount * 0.05; // Each step is ~50ms
+        public double GameTime => _elapsedTime;
 
         public GameEngine()
         {
             _board = new GameBoard();
-            _stepCount = 0;
+            _elapsedTime = 0;
         }
 
         /// <summary>
@@ -28,16 +27,16 @@ namespace BeamGame.GameLogic
         public void Reset()
         {
             _board.Reset();
-            _stepCount = 0;
+            _elapsedTime = 0;
         }
 
         /// <summary>
-        /// Executes one game step with player actions
+        /// Executes one game step with player actions and delta time
         /// </summary>
-        public void Step(PlayerAction player1Action, PlayerAction player2Action)
+        public void Step(PlayerAction player1Action, PlayerAction player2Action, double deltaTime = 0.0167)
         {
-            _board.UpdatePhysics(player1Action, player2Action);
-            _stepCount++;
+            _board.UpdatePhysics(player1Action, player2Action, deltaTime);
+            _elapsedTime += deltaTime;
         }
 
         /// <summary>
@@ -67,7 +66,7 @@ namespace BeamGame.GameLogic
             }
             
             // Time limit reached - both survived
-            if (_stepCount >= MaxSteps)
+            if (_elapsedTime >= MaxGameTime)
             {
                 return new GameResult(Models.GameState.TimeExpired, GameTime, null);
             }

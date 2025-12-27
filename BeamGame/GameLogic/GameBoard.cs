@@ -12,12 +12,12 @@ namespace BeamGame.GameLogic
         private BallState _player2Ball;
         private BeamState _beam;
         
-        // Physics constants - SIMPLIFIED for better AI learning
-        private const double BeamGravityFactor = 0.03;  // Reduced beam influence (was 0.05)
-        private const double Friction = 0.94;      // Increased friction (was 0.92)
-        private const double MaxVelocity = 0.06;   // Reduced max speed (was 0.08)
+        // Physics constants - optimized for 60 FPS but scaled by delta time for consistency
+        private const double BeamGravityFactor = 0.6;  // Per second (60 FPS: 0.01 per frame)
+        private const double Friction = 0.98;      // Per frame (frame-rate independent dampening)
+        private const double MaxVelocity = 1.2;   // Per second (60 FPS: 0.02 per frame)
         private const double EdgePosition = 1.0;   // Ball falls off at position > 1.0 or < -1.0
-        private const double PlayerMoveSpeed = 0.008; // Reduced speed (was 0.04)
+        private const double PlayerMoveSpeed = 0.18; // Per second (60 FPS: 0.003 per frame)
 
         public BallState Player1Ball => _player1Ball;
         public BallState Player2Ball => _player2Ball;
@@ -41,28 +41,31 @@ namespace BeamGame.GameLogic
         }
 
         /// <summary>
-        /// Updates physics for one time step with player inputs
+        /// Updates physics for one time step with player inputs and delta time
         /// </summary>
-        public void UpdatePhysics(PlayerAction player1Action, PlayerAction player2Action)
+        public void UpdatePhysics(PlayerAction player1Action, PlayerAction player2Action, double deltaTime = 0.0167)
         {
             // Handle player 1 input
-            HandlePlayerInput(_player1Ball, player1Action);
+            HandlePlayerInput(_player1Ball, player1Action, deltaTime);
             
             // Handle player 2 input
-            HandlePlayerInput(_player2Ball, player2Action);
+            HandlePlayerInput(_player2Ball, player2Action, deltaTime);
             
             // Update beam angle - tries to tilt toward heavier side
-            UpdateBeamDynamically();
+            UpdateBeamDynamically(deltaTime);
             
             // Update both players' physics
-            UpdateBallPhysics(_player1Ball);
-            UpdateBallPhysics(_player2Ball);
+            UpdateBallPhysics(_player1Ball, deltaTime);
+            UpdateBallPhysics(_player2Ball, deltaTime);
+            
+            // Check for minimal ball collision (very subtle to preserve AI strategy)
+            CheckBallCollision();
             
             // Check if balls have fallen off
             CheckFallConditions();
         }
 
-        private void HandlePlayerInput(BallState ball, PlayerAction action)
+        private void HandlePlayerInput(BallState ball, PlayerAction action, double deltaTime)
         {
             if (ball.HasFallen) return;
             
@@ -71,14 +74,14 @@ namespace BeamGame.GameLogic
                 case PlayerAction.MoveLeft:
                     if (ball.IsOnBeam)
                     {
-                        ball.Velocity -= PlayerMoveSpeed;
+                        ball.Velocity -= PlayerMoveSpeed * deltaTime;
                     }
                     break;
                     
                 case PlayerAction.MoveRight:
                     if (ball.IsOnBeam)
                     {
-                        ball.Velocity += PlayerMoveSpeed;
+                        ball.Velocity += PlayerMoveSpeed * deltaTime;
                     }
                     break;
                     
@@ -88,7 +91,7 @@ namespace BeamGame.GameLogic
             }
         }
 
-        private void UpdateBeamDynamically()
+        private void UpdateBeamDynamically(double deltaTime)
         {
             // Beam tilts based on where the balls are (physics simulation)
             double torque = 0;
@@ -121,7 +124,7 @@ namespace BeamGame.GameLogic
             _beam.Angle = Math.Max(-BeamState.MaxAngle, Math.Min(BeamState.MaxAngle, _beam.Angle));
         }
 
-        private void UpdateBallPhysics(BallState ball)
+        private void UpdateBallPhysics(BallState ball, double deltaTime)
         {
             if (ball.HasFallen) return;
             
@@ -152,18 +155,61 @@ namespace BeamGame.GameLogic
             {
                 // Calculate ball acceleration based on beam angle
                 double angleInRadians = _beam.Angle * Math.PI / 180.0;
-                ball.Acceleration = Math.Sin(angleInRadians) * BeamGravityFactor;
+                ball.Acceleration = Math.Sin(angleInRadians) * BeamGravityFactor * deltaTime;
                 
                 // Update ball velocity
                 ball.Velocity += ball.Acceleration;
-                ball.Velocity *= Friction; // Apply friction
+                ball.Velocity *= Friction; // Friction is per-frame, frame-rate independent
                 
-                // Clamp velocity
-                ball.Velocity = Math.Max(-MaxVelocity, Math.Min(MaxVelocity, ball.Velocity));
+                // Clamp velocity (per-second rate scaled by deltaTime)
+                double maxVel = MaxVelocity * deltaTime;
+                ball.Velocity = Math.Max(-maxVel, Math.Min(maxVel, ball.Velocity));
             }
             
-            // Update ball position
+            // Update ball position (velocity is already scaled)
             ball.Position += ball.Velocity;
+        }
+
+        private void CheckBallCollision()
+        {
+            // Only check collision if both balls are on the beam
+            if (!_player1Ball.IsOnBeam || !_player2Ball.IsOnBeam) return;
+            if (_player1Ball.HasFallen || _player2Ball.HasFallen) return;
+            
+            // Calculate distance between balls (normalized positions on beam)
+            double distance = Math.Abs(_player1Ball.Position - _player2Ball.Position);
+            
+            // Slightly tighter collision to be more forgiving
+            const double BallRadiusNormalized = 0.045; // Slightly smaller (was 0.05)
+            const double CollisionDistance = BallRadiusNormalized * 2;
+            
+            if (distance < CollisionDistance)
+            {
+                // Balanced collision - noticeable but not chaotic
+                double overlap = CollisionDistance - distance;
+                double pushForce = overlap * 0.25; // Gentler push (was 0.4)
+                
+                if (_player1Ball.Position < _player2Ball.Position)
+                {
+                    _player1Ball.Position -= pushForce;
+                    _player2Ball.Position += pushForce;
+                }
+                else
+                {
+                    _player1Ball.Position += pushForce;
+                    _player2Ball.Position -= pushForce;
+                }
+                
+                // Softer bounce - mostly dampening, less chaotic bouncing
+                double temp = _player1Ball.Velocity;
+                _player1Ball.Velocity = _player2Ball.Velocity * 0.5; // Reduced (was 0.7)
+                _player2Ball.Velocity = temp * 0.5;
+                
+                // Minimal beam shake - keep physics more predictable
+                double collisionImpact = Math.Abs(temp - _player2Ball.Velocity) * 1.0; // Reduced (was 2.0)
+                _player1Ball.LandingImpact += collisionImpact;
+                _player2Ball.LandingImpact += collisionImpact;
+            }
         }
 
         private void CheckFallConditions()

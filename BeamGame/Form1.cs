@@ -14,10 +14,24 @@ namespace BeamGame
         VsAI
     }
 
+    // Custom double-buffered panel for smooth rendering
+    public class DoubleBufferedPanel : Panel
+    {
+        public DoubleBufferedPanel()
+        {
+            this.DoubleBuffered = true;
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | 
+                          ControlStyles.AllPaintingInWmPaint | 
+                          ControlStyles.UserPaint, true);
+        }
+    }
+
     public partial class frmMain : Form
     {
         private GameEngine _gameEngine;
         private Timer _gameTimer;
+        private System.Diagnostics.Stopwatch _stopwatch;
+        private long _lastUpdateTime;
         
         private PlayerAction _player1CurrentAction;
         private PlayerAction _player2CurrentAction;
@@ -63,9 +77,12 @@ namespace BeamGame
         {
             _gameEngine = new GameEngine();
             
+            // Stopwatch for frame-rate independent physics
+            _stopwatch = new System.Diagnostics.Stopwatch();
+            
             // Game timer for physics updates
             _gameTimer = new Timer();
-            _gameTimer.Interval = 50; // 20 FPS
+            _gameTimer.Interval = 16; // ~60 FPS (1000ms / 60 = 16.67ms)
             _gameTimer.Tick += GameTimer_Tick;
             
             _player1CurrentAction = PlayerAction.None;
@@ -184,7 +201,7 @@ namespace BeamGame
             scorePanel.Controls.Add(_player2ScoreLabel);
             
             // Game panel
-            _gamePanel = new Panel();
+            _gamePanel = new DoubleBufferedPanel(); // Use custom double-buffered panel
             _gamePanel.Location = new Point(10, 250);
             _gamePanel.Size = new Size(860, 380);
             _gamePanel.BackColor = Color.FromArgb(245, 250, 255);
@@ -405,6 +422,14 @@ namespace BeamGame
 
         private void GameTimer_Tick(object sender, EventArgs e)
         {
+            // Calculate delta time for frame-rate independence
+            long currentTime = _stopwatch.ElapsedMilliseconds;
+            double deltaTime = (_lastUpdateTime == 0) ? 0.0167 : (currentTime - _lastUpdateTime) / 1000.0;
+            _lastUpdateTime = currentTime;
+            
+            // Clamp delta time to avoid huge jumps (e.g., when debugging)
+            if (deltaTime > 0.1) deltaTime = 0.0167;
+            
             var result = _gameEngine.CheckGameState();
             
             if (result.State == Models.GameState.InProgress)
@@ -415,7 +440,7 @@ namespace BeamGame
                     _player2CurrentAction = _aiPlayer.DetermineMove(_gameEngine);
                 }
                 
-                _gameEngine.Step(_player1CurrentAction, _player2CurrentAction);
+                _gameEngine.Step(_player1CurrentAction, _player2CurrentAction, deltaTime);
                 _gamePanel.Invalidate();
                 UpdateStats();
             }
@@ -485,6 +510,8 @@ namespace BeamGame
             _gameEngine.Reset();
             _player1CurrentAction = PlayerAction.None;
             _player2CurrentAction = PlayerAction.None;
+            _stopwatch.Restart();
+            _lastUpdateTime = 0;
             _gameTimer.Start();
             _btnStart.Text = "▶️ PLAYING...";
             _gamePanel.Invalidate();

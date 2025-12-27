@@ -1,9 +1,9 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
-using TicTacToe.AI;
+using BeamGame.AI;
 
-namespace TicTacToe
+namespace BeamGame
 {
     /// <summary>
     /// Progress dialog for AI training with real-time statistics

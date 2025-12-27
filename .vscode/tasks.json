@@ -6,7 +6,7 @@
             "type": "process",
             "command": "${env:ProgramFiles}\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
             "args": [
-                "${workspaceFolder}\\TicTacToe.sln",
+                "${workspaceFolder}\\BeamGame.sln",
                 "/p:Configuration=Debug",
                 "/t:Build",
                 "/v:minimal",
@@ -25,7 +25,7 @@
         {
             "label": "run",
             "type": "process",
-            "command": "${workspaceFolder}\\TicTacToe\\bin\\Debug\\TicTacToe.exe",
+            "command": "${workspaceFolder}\\BeamGame\\bin\\Debug\\BeamGame.exe",
             "dependsOn": "build",
             "presentation": {
                 "reveal": "always",
