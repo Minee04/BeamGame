@@ -59,7 +59,7 @@ _ReSharper*/
 *.sln.docstates
 
 # Q-Learning AI trained models (optional - remove if you want to commit trained models)
-qtable*.dat
+ai_qtable*.dat
 
 # OS generated files
 .DS_Store
