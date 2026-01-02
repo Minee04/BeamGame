@@ -59,7 +59,8 @@ namespace BeamGame.AI
                 _engine.Step(p1Action, p2Action);
                 
                 double reward = CalculateStepReward(_engine, Player.Player2);
-                _ai.RecordTransition(currentState, p2Action, reward);
+                string nextState = _ai.GetStateString(_engine, Player.Player2);
+                _ai.RecordTransition(currentState, p2Action, reward, nextState);
 
                 GameResult result = _engine.CheckGameState();
                 if (result.State != Models.GameState.InProgress)

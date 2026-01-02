@@ -20,7 +20,7 @@ namespace BeamGame.AI
         private double _minExplorationRate;
         private double _explorationDecay;
         private Random _random;
-        private List<(string state, PlayerAction action, double reward)> _gameHistory;
+        private List<(string state, PlayerAction action, double reward, string nextState)> _gameHistory;
 
         public double ExplorationRate => _explorationRate;
         public int QTableSize => _qTable.Count;
@@ -39,7 +39,7 @@ namespace BeamGame.AI
             _explorationDecay = explorationDecay;
             _minExplorationRate = minExplorationRate;
             _random = new Random();
-            _gameHistory = new List<(string, PlayerAction, double)>();
+            _gameHistory = new List<(string, PlayerAction, double, string)>();
         }
 
         /// <summary>
@@ -49,56 +49,35 @@ namespace BeamGame.AI
         {
             var ball = aiPlayer == Player.Player1 ? engine.Board.Player1Ball : engine.Board.Player2Ball;
             
-            // SAFETY RULE 1: Emergency edge escape (ALWAYS override Q-learning)
+            // Safety rules: emergency edge escape
             if (ball.IsOnBeam && Math.Abs(ball.Position) > 0.85)
-            {
                 return ball.Position > 0 ? PlayerAction.MoveLeft : PlayerAction.MoveRight;
-            }
             
-            // SAFETY RULE 2: Moving fast toward edge
-            if (ball.IsOnBeam && Math.Abs(ball.Position) > 0.65)
-            {
-                if ((ball.Position > 0 && ball.Velocity > 0.02) || (ball.Position < 0 && ball.Velocity < -0.02))
-                {
-                    // Moving toward edge - counter it
-                    return ball.Velocity > 0 ? PlayerAction.MoveLeft : PlayerAction.MoveRight;
-                }
-            }
+            // Counter fast motion toward edge
+            if (ball.IsOnBeam && Math.Abs(ball.Position) > 0.65 &&
+                ((ball.Position > 0 && ball.Velocity > 0.02) || (ball.Position < 0 && ball.Velocity < -0.02)))
+                return ball.Velocity > 0 ? PlayerAction.MoveLeft : PlayerAction.MoveRight;
 
             string state = GetStateString(engine, aiPlayer);
-            PlayerAction[] actions = { PlayerAction.MoveLeft, PlayerAction.MoveRight, PlayerAction.Jump, PlayerAction.None };
 
-            // Epsilon-greedy
+            // Epsilon-greedy: explore with smart bias or exploit Q-values
             if (_random.NextDouble() < _explorationRate)
-            {
-                // Explore: but with intelligent bias
                 return GetSmartRandomAction(ball);
-            }
             else
-            {
-                // Exploit: use learned Q-values
-                return GetBestAction(state, actions);
-            }
+                return GetBestAction(state);
         }
         
-        /// <summary>
-        /// Smart random action - biased toward safe moves
-        /// </summary>
         private PlayerAction GetSmartRandomAction(BallState ball)
         {
-            // If far from center, 70% toward center
+            // 70% toward center if far from center
             if (Math.Abs(ball.Position) > 0.5 && _random.NextDouble() < 0.7)
-            {
                 return ball.Position > 0 ? PlayerAction.MoveLeft : PlayerAction.MoveRight;
-            }
             
-            // 10% chance to jump if stable (for strategic positioning)
+            // 10% jump if stable
             if (ball.IsOnBeam && Math.Abs(ball.Velocity) < 0.02 && _random.NextDouble() < 0.1)
-            {
                 return PlayerAction.Jump;
-            }
             
-            // Otherwise weighted random: 40% left, 40% right, 15% none, 5% jump
+            // Weighted random: 40% left, 40% right, 15% none, 5% jump
             double r = _random.NextDouble();
             if (r < 0.40) return PlayerAction.MoveLeft;
             if (r < 0.80) return PlayerAction.MoveRight;
@@ -106,36 +85,32 @@ namespace BeamGame.AI
             return PlayerAction.Jump;
         }
 
-        public void RecordTransition(string state, PlayerAction action, double reward)
+        public void RecordTransition(string state, PlayerAction action, double reward, string nextState)
         {
-            _gameHistory.Add((state, action, reward));
+            _gameHistory.Add((state, action, reward, nextState));
         }
 
         /// <summary>
-        /// Learn from game using TD(0) Q-learning
+        /// Learn from game using TD(0) Q-learning with correct temporal ordering
         /// </summary>
         public void LearnFromGame(double finalReward)
         {
-            for (int i = _gameHistory.Count - 1; i >= 0; i--)
+            // Process in FORWARD order (correct temporal sequence)
+            for (int i = 0; i < _gameHistory.Count; i++)
             {
-                var (state, action, reward) = _gameHistory[i];
+                var (state, action, reward, nextState) = _gameHistory[i];
                 
-                double currentQ = GetQValue(state, ActionToString(action));
+                string actionStr = action.ToString();
+                double currentQ = GetQValue(state, actionStr);
                 
-                double maxNextQ = 0;
-                if (i < _gameHistory.Count - 1)
-                {
-                    var (nextState, _, _) = _gameHistory[i + 1];
-                    maxNextQ = GetMaxQValue(nextState);
-                }
-                else
-                {
-                    reward += finalReward;
-                }
+                // For last transition, use final reward; otherwise bootstrap from next state
+                double maxNextQ = (i == _gameHistory.Count - 1) 
+                    ? finalReward 
+                    : GetMaxQValue(nextState);
                 
                 // Q(s,a) = Q(s,a) + α[r + γ*maxQ(s',a') - Q(s,a)]
                 double newQ = currentQ + _learningRate * (reward + _discountFactor * maxNextQ - currentQ);
-                SetQValue(state, ActionToString(action), newQ);
+                SetQValue(state, actionStr, newQ);
             }
 
             _gameHistory.Clear();
@@ -148,75 +123,51 @@ namespace BeamGame.AI
         }
 
         /// <summary>
-        /// ULTRA-SIMPLE 3D state representation:
-        /// Zone (5) × Velocity (3) × Danger (3) = 45 states total!
+        /// ULTRA-SIMPLE 3D state: Zone (5) × Velocity (3) × Danger (3) = 45 states
         /// </summary>
         public string GetStateString(GameEngine engine, Player aiPlayer)
         {
             var ball = aiPlayer == Player.Player1 ? engine.Board.Player1Ball : engine.Board.Player2Ball;
+            double p = ball.Position, v = ball.Velocity;
+            double absP = Math.Abs(p), absV = Math.Abs(v);
             
-            // Dimension 1: Position Zone (5 bins)
-            // 0=far-left, 1=left, 2=center, 3=right, 4=far-right
-            int zone = GetZone(ball.Position);
+            // Calculate zone (5 bins)
+            int zone;
+            if (p < -0.5) zone = 0;
+            else if (p < -0.15) zone = 1;
+            else if (p < 0.15) zone = 2;
+            else if (p < 0.5) zone = 3;
+            else zone = 4;
             
-            // Dimension 2: Velocity Direction (3 bins)
-            // 0=moving-left, 1=stopped, 2=moving-right
-            int velDir = GetVelocityDirection(ball.Velocity);
+            // Calculate velocity direction (3 bins)
+            int velDir;
+            if (v < -0.01) velDir = 0;
+            else if (v < 0.01) velDir = 1;
+            else velDir = 2;
             
-            // Dimension 3: Danger Level (3 bins)
-            // 0=safe, 1=caution, 2=danger
-            int danger = GetDangerLevel(ball.Position, ball.Velocity);
+            // Calculate danger level (3 bins)
+            int danger;
+            if (absP > 0.7 || absV > 0.04) danger = 2;
+            else if (absP > 0.4 || absV > 0.02) danger = 1;
+            else danger = 0;
             
             return $"{zone}_{velDir}_{danger}";
         }
 
-        private int GetZone(double position)
+        private PlayerAction GetBestAction(string state)
         {
-            if (position < -0.5) return 0; // Far left
-            if (position < -0.15) return 1; // Left
-            if (position < 0.15) return 2;  // Center
-            if (position < 0.5) return 3;   // Right
-            return 4; // Far right
-        }
-
-        private int GetVelocityDirection(double velocity)
-        {
-            if (velocity < -0.01) return 0; // Moving left
-            if (velocity < 0.01) return 1;  // Stopped
-            return 2; // Moving right
-        }
-
-        private int GetDangerLevel(double position, double velocity)
-        {
-            double absPos = Math.Abs(position);
-            double absVel = Math.Abs(velocity);
+            var actions = new[] { PlayerAction.MoveLeft, PlayerAction.MoveRight, PlayerAction.Jump, PlayerAction.None };
             
-            // Danger if near edge OR moving fast toward edge
-            if (absPos > 0.7 || absVel > 0.04)
-                return 2; // Danger
-            else if (absPos > 0.4 || absVel > 0.02)
-                return 1; // Caution
-            else
-                return 0; // Safe
-        }
-
-        private string ActionToString(PlayerAction action)
-        {
-            return action.ToString();
-        }
-
-        private PlayerAction GetBestAction(string state, PlayerAction[] actions)
-        {
-            double maxQ = double.MinValue;
             PlayerAction bestAction = actions[0];
+            double maxQ = GetQValue(state, actions[0].ToString());
             
-            foreach (var action in actions)
+            for (int i = 1; i < actions.Length; i++)
             {
-                double q = GetQValue(state, ActionToString(action));
+                double q = GetQValue(state, actions[i].ToString());
                 if (q > maxQ)
                 {
                     maxQ = q;
-                    bestAction = action;
+                    bestAction = actions[i];
                 }
             }
             
@@ -225,29 +176,33 @@ namespace BeamGame.AI
 
         private double GetQValue(string state, string action)
         {
-            if (!_qTable.ContainsKey(state))
-                return 0.0;
-            
-            if (!_qTable[state].ContainsKey(action))
-                return 0.0;
-            
-            return _qTable[state][action];
+            if (_qTable.TryGetValue(state, out var actions) && 
+                actions.TryGetValue(action, out double value))
+            {
+                return value;
+            }
+            return 0.0;
         }
 
         private void SetQValue(string state, string action, double value)
         {
-            if (!_qTable.ContainsKey(state))
-                _qTable[state] = new Dictionary<string, double>();
-            
-            _qTable[state][action] = value;
+            if (!_qTable.TryGetValue(state, out var actions))
+                _qTable[state] = actions = new Dictionary<string, double>();
+            actions[action] = value;
         }
 
         private double GetMaxQValue(string state)
         {
-            if (!_qTable.ContainsKey(state) || _qTable[state].Count == 0)
+            if (!_qTable.TryGetValue(state, out var actions) || actions.Count == 0)
                 return 0.0;
             
-            return _qTable[state].Values.Max();
+            double maxQ = double.MinValue;
+            foreach (var q in actions.Values)
+            {
+                if (q > maxQ)
+                    maxQ = q;
+            }
+            return maxQ;
         }
 
         public Tuple<int, double> GetStatistics()
@@ -258,38 +213,20 @@ namespace BeamGame.AI
         public void SaveQTable(string filepath)
         {
             using (var writer = new System.IO.StreamWriter(filepath))
-            {
-                foreach (var statePair in _qTable)
-                {
-                    foreach (var actionPair in statePair.Value)
-                    {
-                        writer.WriteLine($"{statePair.Key}|{actionPair.Key}|{actionPair.Value}");
-                    }
-                }
-            }
+                foreach (var state in _qTable)
+                    foreach (var action in state.Value)
+                        writer.WriteLine($"{state.Key}|{action.Key}|{action.Value}");
         }
 
         public void LoadQTable(string filepath)
         {
-            if (!System.IO.File.Exists(filepath))
-                return;
-
+            if (!System.IO.File.Exists(filepath)) return;
             _qTable.Clear();
-            
-            using (var reader = new System.IO.StreamReader(filepath))
+            foreach (var line in System.IO.File.ReadLines(filepath))
             {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    var parts = line.Split('|');
-                    if (parts.Length == 3)
-                    {
-                        string state = parts[0];
-                        string action = parts[1];
-                        double value = double.Parse(parts[2]);
-                        SetQValue(state, action, value);
-                    }
-                }
+                var parts = line.Split('|');
+                if (parts.Length == 3 && double.TryParse(parts[2], out double value))
+                    SetQValue(parts[0], parts[1], value);
             }
         }
 
