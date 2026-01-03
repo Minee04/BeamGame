@@ -48,14 +48,36 @@ namespace BeamGame.AI
         public PlayerAction DetermineNextAction(GameEngine engine, Player aiPlayer)
         {
             var ball = aiPlayer == Player.Player1 ? engine.Board.Player1Ball : engine.Board.Player2Ball;
+            var opponentBall = aiPlayer == Player.Player1 ? engine.Board.Player2Ball : engine.Board.Player1Ball;
             
-            // Safety rules: emergency edge escape
-            if (ball.IsOnBeam && Math.Abs(ball.Position) > 0.85)
+            // EMERGENCY: Jump over opponent if at extreme edge to avoid being pushed off
+            if (ball.IsOnBeam && Math.Abs(ball.Position) > 0.82)
+            {
+                // If opponent is on beam and nearby (potential push situation), JUMP to safety
+                if (opponentBall.IsOnBeam && Math.Abs(ball.Position - opponentBall.Position) < 0.25)
+                    return PlayerAction.Jump;
+                
+                // Otherwise move away from edge aggressively
                 return ball.Position > 0 ? PlayerAction.MoveLeft : PlayerAction.MoveRight;
+            }
             
-            // Counter fast motion toward edge
-            if (ball.IsOnBeam && Math.Abs(ball.Position) > 0.65 &&
-                ((ball.Position > 0 && ball.Velocity > 0.02) || (ball.Position < 0 && ball.Velocity < -0.02)))
+            // Critical edge defense: aggressive escape when near edge
+            if (ball.IsOnBeam && Math.Abs(ball.Position) > 0.70)
+            {
+                // If moving toward edge, jump to reposition if opponent is close
+                if (opponentBall.IsOnBeam && Math.Abs(ball.Position - opponentBall.Position) < 0.3 &&
+                    ((ball.Position > 0 && ball.Velocity > -0.01) || (ball.Position < 0 && ball.Velocity < 0.01)))
+                    return PlayerAction.Jump;
+                
+                // Otherwise move away from edge
+                if ((ball.Position > 0 && ball.Velocity > -0.015) || 
+                    (ball.Position < 0 && ball.Velocity < 0.015))
+                    return ball.Position > 0 ? PlayerAction.MoveLeft : PlayerAction.MoveRight;
+            }
+            
+            // Strong defense: counter ANY motion toward edge when moderately close
+            if (ball.IsOnBeam && Math.Abs(ball.Position) > 0.55 &&
+                ((ball.Position > 0 && ball.Velocity > 0.008) || (ball.Position < 0 && ball.Velocity < -0.008)))
                 return ball.Velocity > 0 ? PlayerAction.MoveLeft : PlayerAction.MoveRight;
 
             string state = GetStateString(engine, aiPlayer);
