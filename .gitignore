@@ -13,6 +13,11 @@ x86/
 [Bb]in/
 [Oo]bj/
 
+# NuGet Packages
+packages/
+*.nupkg
+*.snupkg
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
@@ -42,6 +47,10 @@ x86/
 *.pidb
 *.svclog
 *.scc
+*.dll
+*.xml
+*.exe
+*.cache
 
 # Visual Studio cache
 .vs/
