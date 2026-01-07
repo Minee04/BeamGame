@@ -102,12 +102,13 @@ namespace BeamGame
         {
             this.Text = "Balance Beam Battle - 2 Player Game";
             this.ClientSize = new Size(900, 820);
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.KeyPreview = true;
             this.KeyDown += FrmMain_KeyDown;
             this.KeyUp += FrmMain_KeyUp;
+            this.Resize += FrmMain_Resize;
             
             // Title panel
             Panel titlePanel = new Panel();
@@ -628,6 +629,19 @@ namespace BeamGame
         {
             _gameTimer?.Stop();
             SaveAIData();
+        }
+        
+        private void FrmMain_Resize(object sender, EventArgs e)
+        {
+            int horizontalOffset = Math.Max(10, (this.ClientSize.Width - 880) / 2);
+            
+            foreach (Control control in this.Controls)
+            {
+                if (control is Panel || control is Label || control is Button)
+                {
+                    control.Left = horizontalOffset;
+                }
+            }
         }
         
         private void LoadAIData()
