@@ -2,6 +2,13 @@
 
 A physics-based balance game where two players compete on a tilting beam. Play against a friend or watch the AI learn to master the challenge through Q-Learning!
 
+## 🚀 How to Run
+
+**Prerequisites:** .NET Framework 4.7.2 or higher
+
+1. Build with Visual Studio: Open `BeamGame.sln` and press F5
+2. Or run directly: `BeamGame\bin\Debug\BeamGame.exe` (after building)
+
 ## 🎮 Game Modes
 
 **👥 Two Player** - Compete against a friend  

@@ -49,7 +49,6 @@ packages/
 *.scc
 *.dll
 *.xml
-*.exe
 *.cache
 
 # Visual Studio cache

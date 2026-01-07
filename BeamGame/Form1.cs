@@ -105,6 +105,7 @@ namespace BeamGame
             this.FormBorderStyle = FormBorderStyle.Sizable;
             this.MaximizeBox = true;
             this.StartPosition = FormStartPosition.CenterScreen;
+            this.AutoScroll = true;
             this.KeyPreview = true;
             this.KeyDown += FrmMain_KeyDown;
             this.KeyUp += FrmMain_KeyUp;
