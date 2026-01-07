@@ -6,8 +6,12 @@ A physics-based balance game where two players compete on a tilting beam. Play a
 
 **Prerequisites:** .NET Framework 4.7.2 or higher
 
-1. Build with Visual Studio: Open `BeamGame.sln` and press F5
-2. Or run directly: `BeamGame\bin\Debug\BeamGame.exe` (after building)
+**To Run the Game:**
+1. Double-click `BeamGame.exe`
+
+**For Development:**
+1. Open `BeamGame.sln` in Visual Studio
+2. Press F5 to build and run
 
 ## 🎮 Game Modes
 
