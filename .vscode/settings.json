@@ -60,5 +60,6 @@
   "dotnet-test-explorer.testProjectPath": "**/*Tests.csproj",
   "testExplorer.useNativeTesting": true,
   "testing.automaticallyOpenPeekView": "failureInVisibleDocument",
-  "dotnet.codeLens.enableTestsCodeLens": true
+  "dotnet.codeLens.enableTestsCodeLens": true,
+  "dotnet.preferCSharpExtension": true
 }

@@ -3,16 +3,11 @@
   "configurations": [
     {
       "name": "Launch BeamGame",
-      "type": "node",
+      "type": "PowerShell",
       "request": "launch",
       "preLaunchTask": "build",
-      "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "start", "", "${workspaceFolder}\\BeamGame\\bin\\Debug\\BeamGame.exe"],
-      "console": "integratedTerminal",
-      "windows": {
-        "runtimeExecutable": "cmd",
-        "runtimeArgs": ["/c", "start", "", "${workspaceFolder}\\BeamGame\\bin\\Debug\\BeamGame.exe"]
-      }
+      "script": "${workspaceFolder}\\BeamGame\\bin\\Debug\\BeamGame.exe",
+      "cwd": "${workspaceFolder}"
     }
   ]
 }

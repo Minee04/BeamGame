@@ -101,11 +101,12 @@ namespace BeamGame
         private void SetupCustomUI()
         {
             this.Text = "Balance Beam Battle - 2 Player Game";
-            this.ClientSize = new Size(900, 820);
+            this.ClientSize = new Size(900, 850);
             this.FormBorderStyle = FormBorderStyle.Sizable;
             this.MaximizeBox = true;
+            this.MinimumSize = new Size(600, 650);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.AutoScroll = true;
+            this.AutoScroll = false;
             this.KeyPreview = true;
             this.KeyDown += FrmMain_KeyDown;
             this.KeyUp += FrmMain_KeyUp;
@@ -114,34 +115,38 @@ namespace BeamGame
             // Title panel
             Panel titlePanel = new Panel();
             titlePanel.Location = new Point(10, 10);
-            titlePanel.Size = new Size(860, 100);
+            titlePanel.Size = new Size(this.ClientSize.Width - 20, 75);
             titlePanel.BackColor = Color.FromArgb(230, 240, 255);
             titlePanel.BorderStyle = BorderStyle.FixedSingle;
+            titlePanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             this.Controls.Add(titlePanel);
             
             Label titleLabel = new Label();
             titleLabel.Text = "⚖️ BALANCE BEAM BATTLE ⚖️";
-            titleLabel.Font = new Font("Arial", 18, FontStyle.Bold);
-            titleLabel.Location = new Point(10, 5);
-            titleLabel.Size = new Size(840, 35);
+            titleLabel.Font = new Font("Arial", 16, FontStyle.Bold);
+            titleLabel.Location = new Point(10, 3);
+            titleLabel.Size = new Size(titlePanel.Width - 20, 30);
             titleLabel.TextAlign = ContentAlignment.MiddleCenter;
+            titleLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             titlePanel.Controls.Add(titleLabel);
             
             _instructionsLabel = new Label();
             _instructionsLabel.Text = "🎯 GOAL: Push your opponent off the beam or stay on longer!\n" +
                                      "🔴 Player 1: A/D = Move, W = Jump  |  🔵 Player 2: ← → = Move, ↑ = Jump";
-            _instructionsLabel.Font = new Font("Arial", 9);
-            _instructionsLabel.Location = new Point(10, 40);
-            _instructionsLabel.Size = new Size(840, 50);
+            _instructionsLabel.Font = new Font("Arial", 8);
+            _instructionsLabel.Location = new Point(10, 33);
+            _instructionsLabel.Size = new Size(titlePanel.Width - 20, 38);
             _instructionsLabel.TextAlign = ContentAlignment.TopCenter;
+            _instructionsLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             titlePanel.Controls.Add(_instructionsLabel);
             
             // Game Mode Selection Panel
             Panel gameModePanel = new Panel();
-            gameModePanel.Location = new Point(10, 120);
-            gameModePanel.Size = new Size(860, 50);
+            gameModePanel.Location = new Point(10, 93);
+            gameModePanel.Size = new Size(this.ClientSize.Width - 20, 42);
             gameModePanel.BackColor = Color.FromArgb(255, 250, 240);
             gameModePanel.BorderStyle = BorderStyle.FixedSingle;
+            gameModePanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             this.Controls.Add(gameModePanel);
             
             Label modeLabel = new Label();
@@ -170,100 +175,115 @@ namespace BeamGame
             
             // Score display
             Panel scorePanel = new Panel();
-            scorePanel.Location = new Point(10, 180);
-            scorePanel.Size = new Size(860, 60);
+            scorePanel.Location = new Point(10, 143);
+            scorePanel.Size = new Size(this.ClientSize.Width - 20, 50);
             scorePanel.BackColor = Color.FromArgb(245, 245, 245);
             scorePanel.BorderStyle = BorderStyle.FixedSingle;
+            scorePanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             this.Controls.Add(scorePanel);
             
             _player1ScoreLabel = new Label();
             _player1ScoreLabel.Text = "🔴 Player 1\nWins: 0";
-            _player1ScoreLabel.Font = new Font("Arial", 12, FontStyle.Bold);
+            _player1ScoreLabel.Font = new Font("Arial", 11, FontStyle.Bold);
             _player1ScoreLabel.ForeColor = Color.FromArgb(200, 50, 50);
-            _player1ScoreLabel.Location = new Point(50, 10);
+            _player1ScoreLabel.Location = new Point(10, 5);
             _player1ScoreLabel.Size = new Size(200, 40);
             _player1ScoreLabel.TextAlign = ContentAlignment.MiddleLeft;
+            _player1ScoreLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             scorePanel.Controls.Add(_player1ScoreLabel);
             
             Label vsLabel = new Label();
             vsLabel.Text = "VS";
-            vsLabel.Font = new Font("Arial", 16, FontStyle.Bold);
-            vsLabel.Location = new Point(380, 15);
+            vsLabel.Font = new Font("Arial", 14, FontStyle.Bold);
+            vsLabel.Location = new Point(scorePanel.Width / 2 - 50, 10);
             vsLabel.Size = new Size(100, 30);
             vsLabel.TextAlign = ContentAlignment.MiddleCenter;
+            vsLabel.Anchor = AnchorStyles.Top;
             scorePanel.Controls.Add(vsLabel);
             
             _player2ScoreLabel = new Label();
             _player2ScoreLabel.Text = "🔵 Player 2\nWins: 0";
-            _player2ScoreLabel.Font = new Font("Arial", 12, FontStyle.Bold);
+            _player2ScoreLabel.Font = new Font("Arial", 11, FontStyle.Bold);
             _player2ScoreLabel.ForeColor = Color.FromArgb(50, 50, 200);
-            _player2ScoreLabel.Location = new Point(610, 10);
+            _player2ScoreLabel.Location = new Point(scorePanel.Width - 210, 5);
             _player2ScoreLabel.Size = new Size(200, 40);
             _player2ScoreLabel.TextAlign = ContentAlignment.MiddleRight;
+            _player2ScoreLabel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             scorePanel.Controls.Add(_player2ScoreLabel);
             
             // Game panel
             _gamePanel = new DoubleBufferedPanel(); // Use custom double-buffered panel
-            _gamePanel.Location = new Point(10, 250);
-            _gamePanel.Size = new Size(860, 380);
+            _gamePanel.Location = new Point(10, 201);
+            _gamePanel.Size = new Size(this.ClientSize.Width - 20, this.ClientSize.Height - 380);
             _gamePanel.BackColor = Color.FromArgb(245, 250, 255);
             _gamePanel.BorderStyle = BorderStyle.FixedSingle;
             _gamePanel.Paint += GamePanel_Paint;
+            _gamePanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             this.Controls.Add(_gamePanel);
             
             // Stats panel
             _statsLabel = new Label();
-            _statsLabel.Location = new Point(10, 640);
-            _statsLabel.Size = new Size(860, 50);
+            _statsLabel.Location = new Point(10, this.ClientSize.Height - 170);
+            _statsLabel.Size = new Size(this.ClientSize.Width - 20, 40);
             _statsLabel.Font = new Font("Consolas", 9);
             _statsLabel.BackColor = Color.FromArgb(240, 240, 240);
             _statsLabel.BorderStyle = BorderStyle.FixedSingle;
             _statsLabel.TextAlign = ContentAlignment.MiddleCenter;
             _statsLabel.Text = "Press START GAME to begin!";
+            _statsLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             this.Controls.Add(_statsLabel);
             
-            // Control buttons
+            // Control buttons - using FlowLayoutPanel for responsive button layout
+            FlowLayoutPanel buttonPanel = new FlowLayoutPanel();
+            buttonPanel.Location = new Point(10, this.ClientSize.Height - 122);
+            buttonPanel.Size = new Size(this.ClientSize.Width - 20, 45);
+            buttonPanel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            buttonPanel.FlowDirection = FlowDirection.LeftToRight;
+            buttonPanel.WrapContents = true;
+            this.Controls.Add(buttonPanel);
+            
             _btnStart = new Button();
             _btnStart.Text = "▶️ START";
-            _btnStart.Location = new Point(30, 700);
-            _btnStart.Size = new Size(160, 45);
+            _btnStart.Size = new Size(130, 40);
             _btnStart.Font = new Font("Arial", 10, FontStyle.Bold);
             _btnStart.Click += BtnStart_Click;
-            this.Controls.Add(_btnStart);
+            _btnStart.Margin = new Padding(5);
+            buttonPanel.Controls.Add(_btnStart);
             
             _btnReset = new Button();
             _btnReset.Text = "🔄 RESET";
-            _btnReset.Location = new Point(220, 700);
-            _btnReset.Size = new Size(160, 45);
+            _btnReset.Size = new Size(130, 40);
             _btnReset.Font = new Font("Arial", 10, FontStyle.Bold);
             _btnReset.Click += BtnReset_Click;
-            this.Controls.Add(_btnReset);
+            _btnReset.Margin = new Padding(5);
+            buttonPanel.Controls.Add(_btnReset);
             
             // AI Training button
             _btnTrainAI = new Button();
             _btnTrainAI.Text = "🎓 TRAIN AI";
-            _btnTrainAI.Location = new Point(410, 700);
-            _btnTrainAI.Size = new Size(160, 45);
+            _btnTrainAI.Size = new Size(130, 40);
             _btnTrainAI.Font = new Font("Arial", 10, FontStyle.Bold);
             _btnTrainAI.Click += BtnTrainAI_Click;
-            this.Controls.Add(_btnTrainAI);
+            _btnTrainAI.Margin = new Padding(5);
+            buttonPanel.Controls.Add(_btnTrainAI);
             
             // Reset AI button
             Button btnResetAI = new Button();
             btnResetAI.Text = "🗑️ RESET AI";
-            btnResetAI.Location = new Point(600, 700);
-            btnResetAI.Size = new Size(160, 45);
+            btnResetAI.Size = new Size(130, 40);
             btnResetAI.Font = new Font("Arial", 10, FontStyle.Bold);
             btnResetAI.Click += BtnResetAI_Click;
             btnResetAI.BackColor = Color.FromArgb(255, 240, 240);
-            this.Controls.Add(btnResetAI);
+            btnResetAI.Margin = new Padding(5);
+            buttonPanel.Controls.Add(btnResetAI);
             
             // AI Status Panel
             Panel aiStatusPanel = new Panel();
-            aiStatusPanel.Location = new Point(10, 755);
-            aiStatusPanel.Size = new Size(860, 55);
+            aiStatusPanel.Location = new Point(10, this.ClientSize.Height - 72);
+            aiStatusPanel.Size = new Size(this.ClientSize.Width - 20, 45);
             aiStatusPanel.BackColor = Color.FromArgb(250, 245, 255);
             aiStatusPanel.BorderStyle = BorderStyle.FixedSingle;
+            aiStatusPanel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             this.Controls.Add(aiStatusPanel);
             
             Label aiTitleLabel = new Label();
@@ -275,9 +295,10 @@ namespace BeamGame
             
             _aiStatusLabel = new Label();
             _aiStatusLabel.Font = new Font("Consolas", 8);
-            _aiStatusLabel.Location = new Point(10, 25);
-            _aiStatusLabel.Size = new Size(840, 25);
+            _aiStatusLabel.Location = new Point(10, 22);
+            _aiStatusLabel.Size = new Size(aiStatusPanel.Width - 20, 20);
             _aiStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
+            _aiStatusLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             aiStatusPanel.Controls.Add(_aiStatusLabel);
             
             UpdateScoreDisplay();
@@ -296,7 +317,7 @@ namespace BeamGame
             g.SmoothingMode = SmoothingMode.AntiAlias;
             
             int centerX = _gamePanel.Width / 2;
-            int beamY = _gamePanel.Height / 2 + 30;
+            int beamY = _gamePanel.Height / 2;
             
             // Draw ground line
             using (Pen groundPen = new Pen(Color.FromArgb(100, 100, 100), 3))
@@ -634,15 +655,8 @@ namespace BeamGame
         
         private void FrmMain_Resize(object sender, EventArgs e)
         {
-            int horizontalOffset = Math.Max(10, (this.ClientSize.Width - 880) / 2);
-            
-            foreach (Control control in this.Controls)
-            {
-                if (control is Panel || control is Label || control is Button)
-                {
-                    control.Left = horizontalOffset;
-                }
-            }
+            // Responsive layout is handled by anchoring, but we can refresh the game panel
+            _gamePanel?.Invalidate();
         }
         
         private void LoadAIData()
